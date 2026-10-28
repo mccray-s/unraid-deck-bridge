@@ -1,0 +1,3772 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Unraid Deck Bridge local API",
+    "version": "0.6.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost",
+      "description": "Unix socket only; no TCP listener"
+    }
+  ],
+  "paths": {
+    "/docker/update-access": {
+      "get": {
+        "description": "Docker-only access probe; Engine ping is bounded to two seconds. The adapter supplies the current authenticated principalId, never a task creator.",
+        "parameters": [{"$ref":"#/components/parameters/BridgeActor"}],
+        "responses": {"200":{"description":"Docker access and capabilities","content":{"application/json":{"schema":{"$ref":"#/components/schemas/DockerUpdateAccess"}}}},"default":{"$ref":"#/components/responses/UpdateError"}}
+      }
+    },
+    "/docker/update-checks": {
+      "post": {
+        "description": "Start or join the single in-memory full check. Requires DOCKER READ_ANY, not write permission. Actor/requestId deduplication does not expose actors.",
+        "parameters": [{"$ref":"#/components/parameters/BridgeActor"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateCheckInput"}}}},
+        "responses": {"200":{"description":"Shared check snapshot","content":{"application/json":{"schema":{"$ref":"#/components/schemas/UpdateCheck"}}}},"default":{"$ref":"#/components/responses/UpdateError"}}
+      },
+      "get": {
+        "description": "Read only: omitted id selects active or latest check, null if none. Explicit expired id returns CHECK_EXPIRED. Snapshot eventSequence is the included event watermark; later pages must use the same id.",
+        "parameters": [{"$ref":"#/components/parameters/BridgeActor"},{"name":"id","in":"query","schema":{"type":"string"}},{"$ref":"#/components/parameters/UpdateOffset"},{"$ref":"#/components/parameters/UpdateLimit"}],
+        "responses": {"200":{"description":"Paged check or null","content":{"application/json":{"schema":{"anyOf":[{"$ref":"#/components/schemas/UpdateCheck"},{"type":"null"}]}}}},"default":{"$ref":"#/components/responses/UpdateError"}}
+      }
+    },
+    "/docker/update-checks/events": {
+      "get": {
+        "description": "DOCKER READ_ANY. NDJSON snapshots every 500ms for at most 55 seconds; normal EOF requires continuation. At most 1000 retained events; expired or future cursor returns CURSOR_EXPIRED and requires a new paged snapshot. Disconnect never cancels the shared check.",
+        "parameters": [{"$ref":"#/components/parameters/BridgeActor"},{"$ref":"#/components/parameters/UpdateID"},{"$ref":"#/components/parameters/UpdateAfter"}],
+        "responses": {"200":{"description":"One update-check event or safe ErrorResponse per line","content":{"application/x-ndjson":{"schema":{"oneOf":[{"$ref":"#/components/schemas/UpdateCheckEvent"},{"$ref":"#/components/schemas/ErrorResponse"}]}}}},"default":{"$ref":"#/components/responses/UpdateError"}}
+      }
+    },
+    "/docker/image-updates/preview": {
+      "post": {
+        "description": "DOCKER UPDATE_ANY. Prepare a pure image-update plan from server-side fresh AVAILABLE/canUpdate evidence; the client cannot select another image or configuration.",
+        "parameters": [{"$ref":"#/components/parameters/BridgeActor"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ImageUpdateTarget"}}}},
+        "responses": {"200":{"description":"Actor-bound plan, submitted through existing edit","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Plan"}}}},"default":{"$ref":"#/components/responses/UpdateError"}}
+      }
+    },
+    "/docker/image-update-batches": {
+      "post": {
+        "description": "DOCKER UPDATE_ANY. Persist a parent IMAGE_UPDATE_BATCH and freeze all approved evidence before returning. Reject duplicate Engine IDs, stale targets, and any queued/running writer. Repeated actor/requestId and identical ordered targets return the same parent.",
+        "parameters": [{"$ref":"#/components/parameters/BridgeActor"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ImageUpdateBatchInput"}}}},
+        "responses": {"200":{"description":"Durable parent operation, imageUpdate=false","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Operation"}}}},"default":{"$ref":"#/components/responses/UpdateError"}}
+      },
+      "get": {
+        "description": "DOCKER READ_ANY. Durable parent snapshot with approved item order. eventSequence is the included watermark; read all pages using this same id before subscribing.",
+        "parameters": [{"$ref":"#/components/parameters/BridgeActor"},{"$ref":"#/components/parameters/UpdateID"},{"$ref":"#/components/parameters/UpdateOffset"},{"$ref":"#/components/parameters/UpdateLimit"}],
+        "responses": {"200":{"description":"Paged parent progress","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ImageUpdateBatch"}}}},"default":{"$ref":"#/components/responses/UpdateError"}}
+      }
+    },
+    "/docker/image-update-batches/events": {
+      "get": {
+        "description": "DOCKER READ_ANY. Bounded NDJSON stream (500ms/55 seconds, 1000 events); normal EOF requires continuation, CURSOR_EXPIRED requires a fresh paged snapshot. Disconnect never cancels the durable batch.",
+        "parameters": [{"$ref":"#/components/parameters/BridgeActor"},{"$ref":"#/components/parameters/UpdateID"},{"$ref":"#/components/parameters/UpdateAfter"}],
+        "responses": {"200":{"description":"One batch event or safe ErrorResponse per line","content":{"application/x-ndjson":{"schema":{"oneOf":[{"$ref":"#/components/schemas/ImageUpdateBatchEvent"},{"$ref":"#/components/schemas/ErrorResponse"}]}}}},"default":{"$ref":"#/components/responses/UpdateError"}}
+      }
+    },
+    "/info": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "JSON result; events uses application/x-ndjson",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Info"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ]
+      }
+    },
+    "/docker/config": {
+      "get": {
+        "parameters": [
+          {
+            "name": "containerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actor-bound editable container draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateDraft"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/operations": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "JSON result; events uses application/x-ndjson",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "docker",
+                "system",
+                "plugins",
+                "array"
+              ]
+            },
+            "description": "Authorized operation domain; cross-domain task access is rejected",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/events": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "JSON result; events uses application/x-ndjson",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/Event"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "docker",
+                "system",
+                "plugins",
+                "array"
+              ]
+            },
+            "description": "Authorized operation domain; cross-domain task access is rejected",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/docker/cancel/install": {
+      "post": {
+        "description": "Cancel an owned Docker INSTALL before resource mutation. Bridge requires DOCKER / CREATE_ANY. No Docker availability, accepting or new-operation busy preflight. Correct-entry terminal requests return the original snapshot unchanged.",
+        "parameters": [{"name":"X-Bridge-Actor","in":"header","required":true,"schema":{"type":"string","minLength":1,"maxLength":512},"description":"Official principal supplied by the trusted adapter over root-only Unix socket"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DockerCancel"}}}},
+        "responses": {
+          "200":{"description":"Original operation snapshot; accepted running cancellation remains QUEUED/RUNNING until the runner saves its final result.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Operation"}}}},
+          "default":{"description":"INVALID_INPUT, NOT_FOUND (including other domain), FORBIDDEN (other owner), NOT_CANCELLABLE (wrong kind, child, closed safe window or no live controller), CORE_VERSION_MISMATCH or JOURNAL_FAILED.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/docker/cancel/edit": {
+      "post": {
+        "description": "Cancel an owned Docker EDIT, ENGINE_EDIT, ENGINE_IMAGE_UPDATE, TEMPLATE_ADOPT, TEMPLATE_REPLACE or IMAGE_UPDATE_BATCH before the active task crosses its resource mutation gate. Bridge requires DOCKER / UPDATE_ANY. Batch children cannot be independently cancelled; completed batch updates are retained. No Docker availability, accepting or new-operation busy preflight. Correct-entry terminal requests return the original snapshot unchanged.",
+        "parameters": [{"name":"X-Bridge-Actor","in":"header","required":true,"schema":{"type":"string","minLength":1,"maxLength":512},"description":"Official principal supplied by the trusted adapter over root-only Unix socket"}],
+        "requestBody": {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/DockerCancel"}}}},
+        "responses": {
+          "200":{"description":"Original operation snapshot; accepted running cancellation remains QUEUED/RUNNING until the runner saves its final result.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Operation"}}}},
+          "default":{"description":"INVALID_INPUT, NOT_FOUND (including other domain), FORBIDDEN (other owner), NOT_CANCELLABLE (wrong kind, child, closed safe window or no live controller), CORE_VERSION_MISMATCH or JOURNAL_FAILED.","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
+    "/docker/submit/install": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation; repeated requestId returns original operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ]
+      }
+    },
+    "/docker/submit/edit": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation; repeated requestId returns original operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ]
+      }
+    },
+    "/docker/submit/restart": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operation; repeated requestId returns original operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ]
+      }
+    },
+    "/operations/by-request": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Operation for the current principal and requestId, or null if not submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Operation"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          },
+          {
+            "name": "requestId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128
+            }
+          },
+          {
+            "name": "domain",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "docker",
+                "system",
+                "plugins",
+                "array"
+              ]
+            },
+            "description": "Authorized operation domain; cross-domain task access is rejected",
+            "required": true
+          }
+        ]
+      }
+    },
+    "/system/status": {
+      "get": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/preview": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostPlan"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HostPreviewInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/submit/shutdown": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/submit/reboot": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/status": {
+      "get": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Plugin"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/preview": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostPlan"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HostPreviewInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/submit/uninstall": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/array/status": {
+      "get": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArrayStatus"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/array/preview": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HostPlan"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HostPreviewInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/array/submit/start": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/array/submit/stop": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docker/templates": {
+      "get": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "minLength": 1, "maxLength": 512 },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All local templates, User before Default, with stable ordering and no raw XML or host paths",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/LocalTemplate" } }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/docker/drafts": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DraftImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prepared plan with redacted config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TemplateDraft"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ]
+      }
+    },
+    "/docker/creation-defaults": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "JSON result; events uses application/x-ndjson",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreationDefaults"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable code and redacted message; no raw Docker error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ]
+      }
+    },
+    "/docker/environment": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Read-only Docker editor information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DockerEnvironment"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docker/devices": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "Read-only Docker editor information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceInfo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docker/preview": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DockerPreview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docker/preview/template-replacement": {
+      "post": {
+        "summary": "Prepare explicit same-name User template replacement for the fixed container ID; UPDATE_ANY",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/DockerPreview" }, { "required": ["containerId"], "properties": { "containerId": { "minLength": 1 }, "updateImage": { "const": false }, "adoptTemplate": { "const": false } } }] } } } },
+        "responses": { "200": { "description": "Frozen TEMPLATE_REPLACE plan", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Plan" } } } } }
+      }
+    },
+    "/array/submit/parity_start": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/array/submit/parity_pause": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/array/submit/parity_resume": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/array/submit/parity_cancel": {
+      "post": {
+        "parameters": [
+          {
+            "name": "X-Bridge-Actor",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            "description": "Official principal supplied by the trusted adapter over root-only Unix socket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validated domain result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Stable sanitized error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Submit"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/docker/template-adoption": {
+      "get": {
+        "summary": "Read template adoption eligibility without allocating a draft or plan; READ_ANY",
+        "parameters": [{ "name": "containerId", "in": "query", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Read-only adoption eligibility and safety limitations", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DockerEditability" } } } } }
+      }
+    },
+    "/docker/editability": {
+      "get": {
+        "parameters": [
+          {
+            "name": "containerId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read-only eligibility and structured limitations; no draft or plan allocated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DockerEditability"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read editing eligibility without allocating a draft or plan"
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "BridgeActor": {"name":"X-Bridge-Actor","in":"header","required":true,"schema":{"type":"string","minLength":1,"maxLength":512},"description":"Current official authenticated principal supplied by the trusted adapter over root-only Unix socket"},
+      "UpdateID": {"name":"id","in":"query","required":true,"schema":{"type":"string","minLength":1}},
+      "UpdateOffset": {"name":"offset","in":"query","schema":{"type":"integer","minimum":0,"maximum":2147483647,"default":0}},
+      "UpdateLimit": {"name":"limit","in":"query","schema":{"type":"integer","minimum":1,"maximum":100,"default":100}},
+      "UpdateAfter": {"name":"after","in":"query","schema":{"type":"integer","minimum":0,"maximum":2147483647,"default":0}}
+    },
+    "responses": {
+      "UpdateError": {"description":"Stable domain code and redacted message, never raw Registry errors, token, credentials or configuration. Includes TEMPLATE_MISSING, TEMPLATE_IMAGE_MISMATCH, ENGINE_IMAGE_DEFAULTS_CHANGED, IMAGE_DEFAULTS_UNSUPPORTED, UPDATE_TARGET_CHANGED, REGISTRY_AUTH_REQUIRED, REGISTRY_RATE_LIMITED, REGISTRY_UNAVAILABLE, REGISTRY_UNSUPPORTED, PLATFORM_UNAVAILABLE, CHECK_EXPIRED and CURSOR_EXPIRED. IMAGE_DEFAULTS_UNSUPPORTED preserves verified CURRENT/AVAILABLE image identity but refuses container recreation (canUpdate=false).","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}}
+    },
+    "schemas": {
+      "DockerUpdateAccess": {
+        "type":"object","additionalProperties":false,
+        "required":["principalId","coreOnline","dockerAvailable","capabilities"],
+        "properties":{"principalId":{"type":"string","minLength":1},"coreOnline":{"type":"boolean"},"dockerAvailable":{"type":"boolean"},"capabilities":{"type":"array","items":{"type":"string"}},"reason":{"type":["string","null"]}},
+        "description":"Bridge always overrides principalId from the current authenticated request, never a task creator. Includes docker.updateCheck, docker.engineImageUpdate and docker.imageUpdateBatch when supported."
+      },
+      "UpdateCheckInput": {
+        "type":"object","additionalProperties":false,"required":["requestId","force"],
+        "properties":{"requestId":{"type":"string","minLength":8,"maxLength":128},"force":{"type":"boolean","default":false}}
+      },
+      "ImagePlatform": {
+        "type":"object","additionalProperties":false,"required":["os","architecture"],
+        "properties":{"os":{"type":"string"},"architecture":{"type":"string"},"variant":{"type":["string","null"]}}
+      },
+      "UpdateCheckStatus": {"type":"string","enum":["RUNNING","COMPLETED","FAILED","INTERRUPTED"]},
+      "UpdateCheckItemState": {"type":"string","enum":["PENDING","CHECKING","COMPLETED","SKIPPED","FAILED"]},
+      "ImageUpdateAvailability": {"type":"string","enum":["AVAILABLE","CURRENT","UNKNOWN","PINNED","UNTRACKED","SKIPPED"]},
+      "UpdateCheckItem": {
+        "type":"object","additionalProperties":false,
+        "required":["containerId","name","state","availability","canUpdate","fromCache","revision"],
+        "properties":{
+          "containerId":{"type":"string"},"name":{"type":"string"},
+          "currentImageId":{"type":["string","null"]},"imageReference":{"type":["string","null"]},
+          "platform":{"anyOf":[{"$ref":"#/components/schemas/ImagePlatform"},{"type":"null"}]},
+          "source":{"type":["string","null"],"enum":["UNRAID_TEMPLATE","ENGINE_INSPECT",null]},
+          "state":{"$ref":"#/components/schemas/UpdateCheckItemState"},
+          "availability":{"$ref":"#/components/schemas/ImageUpdateAvailability"},
+          "canUpdate":{"type":"boolean"},"reasonCode":{"type":["string","null"]},
+          "checkedAt":{"type":["string","null"],"format":"date-time"},"expiresAt":{"type":["string","null"],"format":"date-time"},
+          "fromCache":{"type":"boolean"},"revision":{"type":"integer","minimum":0,"maximum":2147483647},
+          "remoteImageId":{"type":["string","null"]}
+        }
+      },
+      "UpdateCheck": {
+        "type":"object","additionalProperties":false,
+        "required":["id","status","revision","eventSequence","total","completed","available","skipped","failed","created","updated","items"],
+        "properties":{
+          "id":{"type":"string"},"status":{"$ref":"#/components/schemas/UpdateCheckStatus"},
+          "revision":{"type":"integer","minimum":0,"maximum":2147483647},"eventSequence":{"type":"integer","minimum":0,"maximum":2147483647},
+          "total":{"type":"integer","minimum":0,"maximum":2147483647},"completed":{"type":"integer","minimum":0,"maximum":2147483647},
+          "available":{"type":"integer","minimum":0,"maximum":2147483647},"skipped":{"type":"integer","minimum":0,"maximum":2147483647},"failed":{"type":"integer","minimum":0,"maximum":2147483647},
+          "created":{"type":"string","format":"date-time"},"updated":{"type":"string","format":"date-time"},
+          "nextRefreshAt":{"type":["string","null"],"format":"date-time"},
+          "items":{"type":"array","items":{"$ref":"#/components/schemas/UpdateCheckItem"}},
+          "nextOffset":{"type":["integer","null"],"minimum":0,"maximum":2147483647},
+          "error":{"anyOf":[{"$ref":"#/components/schemas/Error"},{"type":"null"}]}
+        }
+      },
+      "UpdateCheckEvent": {
+        "type":"object","additionalProperties":false,"required":["sequence","kind","status","completed","total"],
+        "properties":{
+          "sequence":{"type":"integer","minimum":1,"maximum":2147483647},"kind":{"type":"string","enum":["ITEM_CHANGED","COMPLETED"]},
+          "item":{"anyOf":[{"$ref":"#/components/schemas/UpdateCheckItem"},{"type":"null"}]},
+          "status":{"$ref":"#/components/schemas/UpdateCheckStatus"},
+          "completed":{"type":"integer","minimum":0,"maximum":2147483647},"total":{"type":"integer","minimum":0,"maximum":2147483647}
+        }
+      },
+      "ImageUpdateTarget": {
+        "type":"object","additionalProperties":false,"required":["checkId","containerId","currentImageId","revision"],
+        "properties":{"checkId":{"type":"string","minLength":1},"containerId":{"type":"string","minLength":1},"currentImageId":{"type":"string","minLength":1},"revision":{"type":"integer","minimum":0,"maximum":2147483647},"allowMissingTemplate":{"type":"boolean","default":false,"description":"Explicit operator consent, obtained in the existing update confirmation, to update a Dockerman container from its current Engine configuration when its Unraid user template is missing. Does not restore XML or change management labels. Missing consent rejects this path before accepting a write."}}
+      },
+      "ImageUpdateBatchInput": {
+        "type":"object","additionalProperties":false,"required":["requestId","targets"],
+        "properties":{"requestId":{"type":"string","minLength":8,"maxLength":128},"targets":{"type":"array","minItems":1,"uniqueItems":true,"items":{"$ref":"#/components/schemas/ImageUpdateTarget"}}}
+      },
+      "ImageUpdateBatchItemStatus": {"type":"string","enum":["WAITING","RUNNING","UPDATED","UNCHANGED","FAILED","SKIPPED","NEEDS_ATTENTION","INTERRUPTED","CANCELLED"]},
+      "ImageUpdateBatchStatus": {"type":"string","enum":["QUEUED","RUNNING","SUCCEEDED","FAILED","NEEDS_ATTENTION","CANCELLED"]},
+      "ImageUpdateBatchItem": {
+        "type":"object","additionalProperties":false,"required":["index","revision","sourceContainerId","currentImageId","status"],
+        "properties":{
+          "index":{"type":"integer","minimum":0,"maximum":2147483647},"revision":{"type":"integer","minimum":0,"maximum":2147483647},
+          "sourceContainerId":{"type":"string"},"currentImageId":{"type":"string"},"operationId":{"type":["string","null"]},
+          "status":{"$ref":"#/components/schemas/ImageUpdateBatchItemStatus"},"resultContainerId":{"type":["string","null"]},"reasonCode":{"type":["string","null"]},
+          "imageUpdateResult":{"type":["string","null"],"enum":["IMAGE_UPDATED","IMAGE_UNCHANGED",null]}
+        }
+      },
+      "ImageUpdateBatch": {
+        "type":"object","additionalProperties":false,
+        "required":["id","status","revision","eventSequence","canCancel","cancelRequested","total","completed","updated","unchanged","failed","skipped","needsAttention","cancelled","items"],
+        "properties":{
+          "id":{"type":"string"},"status":{"$ref":"#/components/schemas/ImageUpdateBatchStatus"},
+          "canCancel":{"type":"boolean","description":"Execution-stage eligibility only; does not grant permission. False after cancellation is requested, after the active child mutation gate, after all items finish or without live execution control."},"cancelRequested":{"type":"boolean","description":"Persisted parent cancellation intent; not a terminal result."},
+          "revision":{"type":"integer","minimum":0,"maximum":2147483647},"eventSequence":{"type":"integer","minimum":0,"maximum":2147483647},
+          "total":{"type":"integer","minimum":0,"maximum":2147483647},"completed":{"type":"integer","minimum":0,"maximum":2147483647},
+          "updated":{"type":"integer","minimum":0,"maximum":2147483647},"unchanged":{"type":"integer","minimum":0,"maximum":2147483647},
+          "failed":{"type":"integer","minimum":0,"maximum":2147483647},"skipped":{"type":"integer","minimum":0,"maximum":2147483647},"needsAttention":{"type":"integer","minimum":0,"maximum":2147483647},
+          "cancelled":{"type":"integer","minimum":0,"maximum":2147483647,"description":"Cancelled items only; not failed or skipped. Completed includes all terminal items. At terminal total = completed = updated + unchanged + failed + skipped + needsAttention + cancelled."},
+          "activeOperation":{"anyOf":[{"$ref":"#/components/schemas/Operation"},{"type":"null"}]},
+          "items":{"type":"array","items":{"$ref":"#/components/schemas/ImageUpdateBatchItem"}},"nextOffset":{"type":["integer","null"],"minimum":0,"maximum":2147483647}
+        }
+      },
+      "ImageUpdateBatchEvent": {
+        "type":"object","additionalProperties":false,"required":["sequence","kind","status","completed","total","canCancel","cancelRequested"],
+        "properties":{
+          "sequence":{"type":"integer","minimum":1,"maximum":2147483647},"kind":{"type":"string","enum":["ITEM_CHANGED","ACTIVE_PROGRESS","COMPLETED"]},
+          "canCancel":{"type":"boolean"},"cancelRequested":{"type":"boolean"},
+          "item":{"anyOf":[{"$ref":"#/components/schemas/ImageUpdateBatchItem"},{"type":"null"}]},
+          "activeOperation":{"anyOf":[{"$ref":"#/components/schemas/Operation"},{"type":"null"}]},"status":{"$ref":"#/components/schemas/ImageUpdateBatchStatus"},
+          "completed":{"type":"integer","minimum":0,"maximum":2147483647},"total":{"type":"integer","minimum":0,"maximum":2147483647}
+        }
+      },
+      "DockerCancel": {
+        "type":"object","additionalProperties":false,"required":["operationId","coreVersion"],
+        "properties":{
+          "operationId":{"type":"string","pattern":"^[a-f0-9]{32}$"},
+          "coreVersion":{"type":"string","enum":["0.6.0"],"description":"Adapter-supplied protocol version required for cancellation; not GraphQL user input."}
+        }
+      },
+      "Submit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requestId"
+        ],
+        "properties": {
+          "planId": {
+            "type": "string"
+          },
+          "containerId": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "required": [
+          "sequence",
+          "time",
+          "stage",
+          "message"
+        ],
+        "properties": {
+          "sequence": {
+            "type": "integer"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "code": {
+            "type": ["string", "null"],
+            "description": "Stable semantic event message identifier for localization, independent of the execution stage and operation result. Absent, null or unknown codes use the safe message fallback; clients must not infer task outcomes from this field."
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Recovery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "checkedAt",
+          "reason"
+        ],
+        "properties": {
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "oldExists": {
+            "type": "boolean"
+          },
+          "oldRunning": {
+            "type": "boolean"
+          },
+          "replacementExists": {
+            "type": "boolean"
+          },
+          "replacementRunning": {
+            "type": "boolean"
+          },
+          "templateMatches": {
+            "type": "boolean"
+          },
+          "autoStartMatches": {
+            "type": "boolean"
+          },
+          "volumes": {
+            "type": "array",
+            "readOnly": true,
+            "items": {
+              "$ref": "#/components/schemas/RecoveryVolume"
+            },
+            "description": "Optional volume observations retained for failed or interrupted Docker operations."
+          },
+          "engineConfigurationMatches": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Observed Engine replacement configuration matches the frozen edit intent; absent or null means unknown or not applicable."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "issue": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConfigurationIssue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        }
+      },
+      "Spec": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "image",
+          "network",
+          "env",
+          "labels",
+          "ports",
+          "mounts",
+          "templateUrl",
+          "autoStart",
+          "start",
+          "metadata"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          },
+          "templateUrl": {
+            "type": "string"
+          },
+          "env": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Sensitive values are redacted using template Mask and credential detection; other values remain readable"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Sensitive label values are redacted"
+          },
+          "ports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "hostPort",
+                "containerPort",
+                "protocol"
+              ],
+              "properties": {
+                "hostIp": {
+                  "type": "string"
+                },
+                "hostPort": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "containerPort": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "protocol": {
+                  "enum": [
+                    "tcp",
+                    "udp"
+                  ]
+                }
+              }
+            }
+          },
+          "mounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "target",
+                "readOnly"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string"
+                },
+                "readOnly": {
+                  "type": "boolean"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "bind",
+                    "volume",
+                    "tmpfs"
+                  ]
+                },
+                "mode": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "autoStart": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "boolean"
+          },
+          "privileged": {
+            "type": "boolean"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/Runtime"
+          },
+          "extraParams": {
+            "type": "string"
+          },
+          "postArgs": {
+            "type": "string"
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkAttachment"
+            }
+          },
+          "networkDriver": {
+            "type": "string",
+            "readOnly": true,
+            "description": "Resolved Engine network driver used to validate the selected network; not client input."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/DockerMetadata"
+          }
+        }
+      },
+      "Plan": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "expires",
+          "config",
+          "changed",
+          "warnings",
+          "updateImage",
+          "templateReuse",
+          "metadata",
+          "source",
+          "sourceAfter",
+          "targetContainerId",
+          "limitations",
+          "changeSummary"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "INSTALL",
+              "EDIT",
+              "ENGINE_EDIT",
+              "ENGINE_IMAGE_UPDATE",
+              "TEMPLATE_ADOPT",
+              "TEMPLATE_REPLACE"
+            ]
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "config": {
+            "$ref": "#/components/schemas/Spec"
+          },
+          "changed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "directoriesToCreate": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updateImage": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "Frozen plan intent to pull and replace the image, as confirmed by the server."
+          },
+          "templateReuse": {
+            "type": "boolean",
+            "readOnly": true,
+            "description": "True when INSTALL or TEMPLATE_REPLACE updates the selected existing User template."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/DockerMetadata"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DockerConfigurationSource"
+          },
+          "sourceAfter": { "$ref": "#/components/schemas/DockerConfigurationSource" },
+          "targetContainerId": { "type": ["string", "null"], "description": "Frozen Engine target ID for every existing-container plan; null for new installs." },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DockerEditLimitation"
+            }
+          },
+          "changeSummary": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConfigurationChange"
+            }
+          }
+        }
+      },
+      "PullLayerProgress": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "phase"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Full layer identifier, stable for the lifetime of this pull."
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "DOWNLOADING",
+              "DOWNLOADED",
+              "VERIFYING",
+              "EXTRACTING",
+              "COMPLETE",
+              "EXISTS",
+              "PROCESSING"
+            ]
+          },
+          "current": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Observed bytes for this phase; absent or null when unknown."
+          },
+          "total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Observed total bytes for this phase; absent or null when unknown."
+          }
+        }
+      },
+      "PullProgress": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "revision",
+          "finished",
+          "layers"
+        ],
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Increases only when the latest pull snapshot actually changes."
+          },
+          "finished": {
+            "type": "boolean",
+            "description": "The pull stream ended, on either success or failure; this does not imply operation success."
+          },
+          "layers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PullLayerProgress"
+            },
+            "description": "Unique full layer identifiers in first-seen order."
+          }
+        }
+      },
+      "Operation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "stage",
+          "created",
+          "updated",
+          "name",
+          "events",
+          "domain",
+          "imageUpdate",
+          "canCancel",
+          "cancelRequested"
+        ],
+        "properties": {
+          "canCancel":{"type":"boolean","description":"Live pre-mutation execution eligibility, not authorization. False for non-Docker, RESTART, child operations, terminal operations, requested cancellation and recovered operations without a live controller."},
+          "cancelRequested":{"type":"boolean","description":"Persisted user cancellation intent. Acceptance alone does not release execution or imply a terminal result. Safe completion is status/stage CANCELLED, error null; ordinary configuration receipts are NOT_APPLIED/NOT_REQUESTED and imageUpdateResult is absent."},
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "INSTALL",
+              "EDIT",
+              "RESTART",
+              "SHUTDOWN",
+              "REBOOT",
+              "UNINSTALL",
+              "START",
+              "STOP",
+              "ENGINE_EDIT",
+              "ENGINE_IMAGE_UPDATE",
+              "TEMPLATE_ADOPT",
+              "TEMPLATE_REPLACE",
+              "IMAGE_UPDATE_BATCH"
+            ]
+          },
+          "status": {
+            "enum": [
+              "QUEUED",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED",
+              "NEEDS_ATTENTION",
+              "CANCELLED",
+              "DISPATCHED"
+            ]
+          },
+          "stage": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "imageUpdate": {
+            "type": "boolean",
+            "description": "True only for a pure Docker EDIT or ENGINE_IMAGE_UPDATE that updates the image without configuration changes or directory creation. False for batch parents and all other operations, including historical records without a marker."
+          },
+          "imageUpdateResult": {
+            "type": ["string", "null"],
+            "enum": ["IMAGE_UPDATED", "IMAGE_UNCHANGED", null],
+            "description": "Persisted pure image-update outcome: IMAGE_UPDATED proves replacement was committed; IMAGE_UNCHANGED proves the original container was not recreated. Absent or null before the outcome is known and for non-image-update operations."
+          },
+          "configurationResult": {
+            "type": ["string", "null"],
+            "enum": ["NOT_APPLIED", "APPLIED", "UNKNOWN", null],
+            "description": "Required non-null configuration outcome when domain is docker, imageUpdate is false and kind is INSTALL, EDIT, ENGINE_EDIT, TEMPLATE_ADOPT or TEMPLATE_REPLACE. NOT_APPLIED means this configuration change was not applied or was fully rolled back; it does not imply application data rollback. APPLIED means the configuration change was committed. UNKNOWN is an explicitly unconfirmed outcome, never a fallback for an absent field. Other operations may omit this field or return null."
+          },
+          "startResult": {
+            "type": ["string", "null"],
+            "enum": ["NOT_REQUESTED", "ACCEPTED", "FAILED", "UNKNOWN", null],
+            "description": "Required non-null start outcome when domain is docker, imageUpdate is false and kind is INSTALL, EDIT, ENGINE_EDIT, TEMPLATE_ADOPT or TEMPLATE_REPLACE. ACCEPTED means Docker accepted Start, not application readiness or continued running. FAILED means definite rejection. UNKNOWN is an explicitly unconfirmed outcome, never a fallback for an absent field. INSTALL with APPLIED configurationResult, FAILED startResult and START_FAILED error is terminal FAILED; uncertain outcomes remain NEEDS_ATTENTION. Other operations may omit this field or return null."
+          },
+          "containerId": {
+            "type": "string"
+          },
+          "oldId": {
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          },
+          "recovery": {
+            "$ref": "#/components/schemas/Recovery"
+          },
+          "pullProgress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PullProgress"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Latest ephemeral image-pull snapshot, independent of the events cursor; absent or null when unavailable or not applicable. Not persisted or included in event subscriptions."
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "docker",
+              "system",
+              "plugins",
+              "array"
+            ]
+          },
+          "bootId": {
+            "type": "string"
+          }
+        }
+      },
+      "Info": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "version",
+          "accepting",
+          "operations",
+          "dockerAvailable",
+          "capabilities"
+        ],
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "accepting": {
+            "type": "boolean"
+          },
+          "operations": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dockerAvailable": {
+            "type": "boolean"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "engineApiVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "ContainerView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "running",
+          "imageId",
+          "manager"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "running": {
+            "type": "boolean"
+          },
+          "imageId": {
+            "type": "string"
+          },
+          "manager": {
+            "enum": [
+              "DOCKERMAN",
+              "COMPOSE",
+              "UNMANAGED",
+              "OTHER"
+            ]
+          }
+        }
+      },
+      "HostPreviewInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "enum": [
+              "SHUTDOWN",
+              "REBOOT",
+              "UNINSTALL",
+              "START",
+              "STOP",
+              "PARITY_START",
+              "PARITY_PAUSE",
+              "PARITY_RESUME",
+              "PARITY_CANCEL"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "maxLength": 132
+          },
+          "correct": {
+            "type": "boolean",
+            "description": "Required only for PARITY_START, forbidden for all other actions. Explicit null is invalid."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "action": {
+                  "const": "PARITY_START"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "correct"
+              ]
+            },
+            "else": {
+              "not": {
+                "required": [
+                  "correct"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "HostPlan": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "expires",
+          "domain",
+          "action",
+          "target",
+          "bootId",
+          "summary",
+          "warnings",
+          "correct"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "expires": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "bootId": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correct": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Frozen correction intent for PARITY_START; null for other actions."
+          }
+        }
+      },
+      "SystemStatus": {
+        "type": "object",
+        "required": [
+          "bootId",
+          "shutdownTimeout",
+          "powerMode",
+          "liveExecutionVerified"
+        ],
+        "properties": {
+          "bootId": {
+            "type": "string"
+          },
+          "shutdownTimeout": {
+            "type": "string"
+          },
+          "powerMode": {
+            "const": "NATIVE_WEBUI"
+          },
+          "liveExecutionVerified": {
+            "const": false
+          }
+        }
+      },
+      "ArrayStatus": {
+        "type": "object",
+        "required": [
+          "state",
+          "mdState",
+          "fsState",
+          "progress",
+          "canStart",
+          "canStop",
+          "liveExecutionVerified",
+          "bootId",
+          "observedAt",
+          "parity"
+        ],
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "mdState": {
+            "type": "string"
+          },
+          "fsState": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "canStart": {
+            "type": "boolean"
+          },
+          "canStop": {
+            "type": "boolean"
+          },
+          "liveExecutionVerified": {
+            "type": "boolean"
+          },
+          "bootId": {
+            "type": "string"
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "parity": {
+            "$ref": "#/components/schemas/ParityStatus"
+          }
+        }
+      },
+      "Plugin": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "uninstallable"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "uninstallable": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DraftField": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "sensitive": {
+            "type": "boolean"
+          },
+          "hasValue": {
+            "type": "boolean"
+          },
+          "defaultValue": {
+            "type": "string",
+            "description": "Raw Config Default; empty for sensitive fields."
+          },
+          "hasDefaultValue": {
+            "type": "boolean"
+          },
+          "templateEditable": {
+            "type": "boolean"
+          },
+          "advanced": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "name",
+          "target",
+          "description",
+          "value",
+          "mode",
+          "required",
+          "sensitive",
+          "hasValue",
+          "defaultValue",
+          "hasDefaultValue",
+          "templateEditable",
+          "advanced",
+          "options"
+        ],
+        "additionalProperties": false
+      },
+      "TemplateDraft": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "expires": {
+            "type": "string"
+          },
+          "sourceUrl": {
+            "type": "string"
+          },
+          "digest": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "network": {
+            "type": "string"
+          },
+          "appDataRoot": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DraftField"
+            }
+          },
+          "privileged": {
+            "type": "boolean"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/Runtime"
+          },
+          "extraParams": {
+            "type": "string"
+          },
+          "postArgs": {
+            "type": "string"
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkAttachment"
+            }
+          },
+          "containerId": {
+            "type": "string"
+          },
+          "running": {
+            "type": "boolean"
+          },
+          "autoStart": {
+            "type": "boolean"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/DockerMetadata"
+          },
+          "source": {
+            "$ref": "#/components/schemas/DockerConfigurationSource"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DockerEditLimitation"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "expires",
+          "sourceUrl",
+          "digest",
+          "name",
+          "image",
+          "network",
+          "appDataRoot",
+          "fields",
+          "metadata",
+          "source",
+          "limitations"
+        ],
+        "additionalProperties": false
+      },
+      "TemplateImportSource": {
+        "type": "string",
+        "enum": ["URL", "XML", "LOCAL"]
+      },
+      "LocalTemplateKind": {
+        "type": "string",
+        "enum": ["USER", "DEFAULT"]
+      },
+      "LocalTemplate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "revision", "name", "image", "iconUrl", "containerExists", "containerId", "issueCode"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^lt_[0-9a-f]{64}$" },
+          "kind": { "$ref": "#/components/schemas/LocalTemplateKind" },
+          "revision": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "name": { "type": "string" },
+          "image": { "type": ["string", "null"] },
+          "iconUrl": { "type": ["string", "null"], "description": "Validated XML Icon reference: HTTP(S) without credentials or a supported relative WebUI asset path; null when absent or the template is invalid. No image download is performed." },
+          "containerExists": { "type": ["boolean", "null"] },
+          "containerId": { "type": ["string", "null"], "description": "Actual matching Engine summary ID; null for no match or incomplete observation. Never synthesized from a name." },
+          "issueCode": { "type": ["string", "null"] }
+        }
+      },
+      "DraftImport": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source"],
+        "properties": {
+          "source": { "$ref": "#/components/schemas/TemplateImportSource" },
+          "url": { "type": ["string", "null"] },
+          "xml": { "type": ["string", "null"], "maxLength": 1048576 },
+          "templateId": { "type": ["string", "null"] },
+          "revision": { "type": ["string", "null"] }
+        },
+        "oneOf": [
+          {
+            "required": ["url"],
+            "properties": {
+              "source": { "const": "URL" },
+              "url": { "type": "string", "pattern": "\\S" },
+              "xml": { "enum": ["", null] },
+              "templateId": { "enum": ["", null] },
+              "revision": { "enum": ["", null] }
+            }
+          },
+          {
+            "required": ["xml"],
+            "properties": {
+              "source": { "const": "XML" },
+              "xml": { "type": "string", "pattern": "\\S" },
+              "url": { "enum": ["", null] },
+              "templateId": { "enum": ["", null] },
+              "revision": { "enum": ["", null] }
+            }
+          },
+          {
+            "required": ["templateId", "revision"],
+            "properties": {
+              "source": { "const": "LOCAL" },
+              "templateId": { "type": "string", "pattern": "^lt_[0-9a-f]{64}$" },
+              "revision": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "url": { "enum": ["", null] },
+              "xml": { "enum": ["", null] }
+            }
+          }
+        ]
+      },
+      "CustomValue": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "keepFieldId": {
+            "type": "string"
+          },
+          "sensitive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "value",
+          "sensitive"
+        ],
+        "additionalProperties": false
+      },
+      "TemplateFieldInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "index"],
+        "properties": {
+          "type": {"type": "string", "enum": ["port", "path", "variable", "label", "device"]},
+          "index": {"type": "integer", "minimum": 0, "description": "Zero-based index in this request's corresponding runtime array."},
+          "draftFieldId": {"type": ["string", "null"], "maxLength": 32, "pattern": "^[^\\u0000]*$"},
+          "displayName": {"type": ["string", "null"], "maxLength": 512, "pattern": "^[^\\u0000]*$", "description": "Missing/null preserves; empty or whitespace restores Name=Target."},
+          "defaultValue": {"type": ["string", "null"], "maxLength": 65536, "pattern": "^[^\\u0000]*$", "description": "Missing/null preserves; empty clears. Device rejects non-null values."},
+          "description": {"type": ["string", "null"], "maxLength": 65536, "pattern": "^[^\\u0000]*$", "description": "Raw text and HTML; missing/null preserves and empty clears."}
+        },
+        "description": "Strict draft-scoped source identity. Type/index and source IDs must be unique; index must exist in the corresponding runtime collection."
+      },
+      "CreationDefaults": {
+        "type": "object",
+        "required": [
+          "appDataRoot"
+        ],
+        "properties": {
+          "appDataRoot": {
+            "type": "string"
+          }
+        }
+      },
+      "Runtime": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "user": {
+            "type": "string"
+          },
+          "workingDir": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "domainname": {
+            "type": "string"
+          },
+          "stopSignal": {
+            "type": "string"
+          },
+          "restartPolicy": {
+            "type": "string"
+          },
+          "logDriver": {
+            "type": "string"
+          },
+          "cpuSet": {
+            "type": "string"
+          },
+          "cpuSetMems": {
+            "type": "string"
+          },
+          "runtime": {
+            "type": "string"
+          },
+          "pidMode": {
+            "type": "string"
+          },
+          "ipcMode": {
+            "type": "string"
+          },
+          "utsMode": {
+            "type": "string"
+          },
+          "usernsMode": {
+            "type": "string"
+          },
+          "cgroupnsMode": {
+            "type": "string"
+          },
+          "cgroupParent": {
+            "type": "string"
+          },
+          "entrypoint": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cmd": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "groupAdd": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capAdd": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "capDrop": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "securityOpt": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dnsSearch": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dnsOptions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "extraHosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "devices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "gpus": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ulimits": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "deviceCgroupRules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "stopTimeout": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "restartRetries": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memory": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memorySwap": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memoryReservation": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memorySwappiness": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nanoCpus": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cpuShares": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cpuQuota": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cpuPeriod": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pidsLimit": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "shmSize": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "oomScoreAdj": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "init": {
+            "type": "boolean"
+          },
+          "openStdin": {
+            "type": "boolean"
+          },
+          "tty": {
+            "type": "boolean"
+          },
+          "readOnlyRootfs": {
+            "type": "boolean"
+          },
+          "autoRemove": {
+            "type": "boolean"
+          },
+          "oomKillDisable": {
+            "type": "boolean"
+          },
+          "logOptions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "sysctls": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "storageOptions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "tmpfs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "healthcheck": {
+            "$ref": "#/components/schemas/Healthcheck"
+          }
+        }
+      },
+      "NetworkAttachment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "ipv4": {
+            "type": "string"
+          },
+          "ipv6": {
+            "type": "string"
+          },
+          "macAddress": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Healthcheck": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "test": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interval": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "timeout": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "startPeriod": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "startInterval": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "retries": {
+            "type": "integer"
+          }
+        }
+      },
+      "NetworkInfo": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "driver",
+          "ipv6",
+          "internal",
+          "subnets"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "driver": {
+            "type": "string"
+          },
+          "ipv6": {
+            "type": "boolean"
+          },
+          "internal": {
+            "type": "boolean"
+          },
+          "subnets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "DockerEnvironment": {
+        "type": "object",
+        "required": [
+          "engineApiVersion",
+          "cpuCount",
+          "memoryTotal",
+          "defaultRuntime",
+          "runtimes",
+          "networks"
+        ],
+        "properties": {
+          "engineApiVersion": {
+            "type": "string"
+          },
+          "cpuCount": {
+            "type": "integer"
+          },
+          "memoryTotal": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "defaultRuntime": {
+            "type": "string"
+          },
+          "runtimes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkInfo"
+            }
+          }
+        }
+      },
+      "DeviceInfo": {
+        "type": "object",
+        "required": [
+          "path",
+          "kind"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          }
+        }
+      },
+      "DockerConfiguration": {
+        "type": "object",
+        "properties": {
+          "draftId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "privileged": {
+            "type": "boolean"
+          },
+          "start": {
+            "type": "boolean"
+          },
+          "autoStart": {
+            "type": "boolean"
+          },
+          "ports": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "hostPort",
+                "containerPort",
+                "protocol"
+              ],
+              "properties": {
+                "hostIp": {
+                  "type": "string"
+                },
+                "hostPort": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "containerPort": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                },
+                "protocol": {
+                  "enum": [
+                    "tcp",
+                    "udp"
+                  ]
+                }
+              }
+            }
+          },
+          "mounts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "source",
+                "target",
+                "readOnly"
+              ],
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string"
+                },
+                "readOnly": {
+                  "type": "boolean"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "bind",
+                    "volume",
+                    "tmpfs"
+                  ]
+                },
+                "mode": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "environment": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomValue"
+            }
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomValue"
+            }
+          },
+          "templateFields": {
+            "type": ["array", "null"],
+            "maxItems": 1280,
+            "items": {"$ref": "#/components/schemas/TemplateFieldInput"}
+          },
+          "network": {
+            "type": "string"
+          },
+          "runtime": {
+            "$ref": "#/components/schemas/Runtime"
+          },
+          "extraParams": {
+            "type": "string"
+          },
+          "postArgs": {
+            "type": "string"
+          },
+          "networks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkAttachment"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/DockerMetadataInput"
+          }
+        },
+        "required": [
+          "name",
+          "image",
+          "privileged",
+          "start",
+          "autoStart",
+          "ports",
+          "mounts",
+          "environment",
+          "labels",
+          "network"
+        ],
+        "additionalProperties": false
+      },
+      "DockerPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "config"
+        ],
+        "properties": {
+          "containerId": {
+            "type": "string"
+          },
+          "updateImage": {
+            "type": "boolean",
+            "default": false
+          },
+          "adoptTemplate": { "type": "boolean", "default": false },
+          "config": {
+            "$ref": "#/components/schemas/DockerConfiguration"
+          }
+        }
+      },
+      "RecoveryVolume": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "target",
+          "created"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "created": {
+            "type": "boolean",
+            "description": "This operation planned to create the volume; does not itself prove creation occurred."
+          },
+          "exists": {
+            "type": "boolean",
+            "description": "Whether the volume exists at observation time; omitted when unknown."
+          },
+          "owned": {
+            "type": "boolean",
+            "description": "Whether the created volume operation label matches; omitted for reused volumes or when unknown."
+          }
+        }
+      },
+      "DockerMetadata": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "iconUrl",
+          "webUi",
+          "shell"
+        ],
+        "properties": {
+          "iconUrl": {
+            "type": "string",
+            "description": "Effective server-side Unraid Icon value; empty removes the icon URL."
+          },
+          "webUi": {
+            "type": "string",
+            "description": "Effective Unraid WebUI URL, including supported Unraid placeholders; empty removes it."
+          },
+          "shell": {
+            "type": "string",
+            "description": "Effective Unraid Shell selection, default sh."
+          }
+        }
+      },
+      "DockerMetadataInput": {
+        "type": "object",
+        "nullable": true,
+        "additionalProperties": false,
+        "description": "Omitted or null metadata or members preserve the draft value. Without a draft URLs default to empty and shell to sh. Empty URL members clear; empty shell resets to sh. No URL fetch, image upload, or arbitrary command execution.",
+        "properties": {
+          "iconUrl": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 4096,
+            "description": "Empty or absolute HTTP(S) URL without embedded credentials; no image download is performed."
+          },
+          "webUi": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 4096,
+            "description": "Empty or HTTP(S) WebUI URL; supported placeholders are [IP] and [PORT:number]."
+          },
+          "shell": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 16,
+            "enum": [
+              "",
+              "sh",
+              "bash",
+              null
+            ],
+            "description": "Unraid console selector; empty resets to sh."
+          }
+        }
+      },
+      "ParityStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "kind",
+          "correcting",
+          "positionBytes",
+          "totalBytes",
+          "speedBytesPerSecond",
+          "elapsedSeconds",
+          "errorCount",
+          "canStart",
+          "canPause",
+          "canResume",
+          "canCancel",
+          "lastResult"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "IDLE",
+              "RUNNING",
+              "PAUSED",
+              "UNAVAILABLE",
+              "UNKNOWN"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PARITY_CHECK",
+              "READ_CHECK",
+              "REBUILD",
+              "CLEAR",
+              "UNKNOWN"
+            ]
+          },
+          "correcting": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "positionBytes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]+$"
+          },
+          "totalBytes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]+$"
+          },
+          "speedBytesPerSecond": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]+$"
+          },
+          "elapsedSeconds": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]+$",
+            "description": "Current host-reported parity duration seconds using official API semantics, only for a normally started array with confirmed RUNNING or PAUSED PARITY_CHECK. Start is sbSynced; end is sbSynced2 when positive, otherwise this snapshot's observedAt Unix seconds. Requires strict unsigned decimal host markers, a positive valid RFC3339-range start no later than observedAt, and a valid end at or after start and no later than observedAt. Unknown, invalid, future, transitional or non-parity evidence stays null. Resume may reset the start, so this may describe only the latest run segment, not the whole operation or all pauses. No stamps access or run tracking; never substituted from lastResult, progress, speed or mdResyncDt."
+          },
+          "errorCount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]+$"
+          },
+          "canStart": {
+            "type": "boolean"
+          },
+          "canPause": {
+            "type": "boolean"
+          },
+          "canResume": {
+            "type": "boolean"
+          },
+          "canCancel": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "lastResult": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ParityLastResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "description": "Current observed operation, independent of parity history. Byte quantities and counts are decimal strings; missing or invalid values stay null. REBUILD covers parity sync and data rebuild. Allowed actions are authoritative preconditions, not permission grants."
+      },
+      "ParityLastResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "startedAt",
+          "finishedAt",
+          "elapsedSeconds",
+          "errorCount"
+        ],
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "CANCELLED",
+              "FAILED"
+            ]
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "elapsedSeconds": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]+$"
+          },
+          "errorCount": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9]+$"
+          }
+        },
+        "description": "Most recent result proved by current raw state only, null during an active operation or when evidence is incomplete. elapsedSeconds is end-start wall-clock time, not history active time excluding pauses. No history or stamps file access."
+      },
+      "DockerConfigurationSource": {
+        "type": "string",
+        "enum": [
+          "UNRAID_TEMPLATE",
+          "ENGINE_INSPECT"
+        ]
+      },
+      "DockerEditLimitation": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "field",
+          "blocking"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "field": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "blocking": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DockerEditability": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "editable",
+          "source",
+          "reasonCode",
+          "limitations"
+        ],
+        "properties": {
+          "editable": {
+            "type": "boolean"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DockerConfigurationSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasonCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DockerEditLimitation"
+            }
+          }
+        }
+      },
+      "ConfigurationIssue": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "templateFields",
+              "templateFields.defaultValue",
+              "name",
+              "image",
+              "network",
+              "networks",
+              "privileged",
+              "start",
+              "autoStart",
+              "environment",
+              "labels",
+              "ports",
+              "mounts",
+              "metadata",
+              "metadata.iconUrl",
+              "metadata.webUi",
+              "metadata.shell",
+              "extraParams",
+              "postArgs",
+              "runtime",
+              "runtime.user",
+              "runtime.workingDir",
+              "runtime.hostname",
+              "runtime.domainname",
+              "runtime.stopSignal",
+              "runtime.restartPolicy",
+              "runtime.logDriver",
+              "runtime.cpuSet",
+              "runtime.cpuSetMems",
+              "runtime.runtime",
+              "runtime.pidMode",
+              "runtime.ipcMode",
+              "runtime.utsMode",
+              "runtime.usernsMode",
+              "runtime.cgroupnsMode",
+              "runtime.cgroupParent",
+              "runtime.entrypoint",
+              "runtime.cmd",
+              "runtime.groupAdd",
+              "runtime.capAdd",
+              "runtime.capDrop",
+              "runtime.securityOpt",
+              "runtime.dns",
+              "runtime.dnsSearch",
+              "runtime.dnsOptions",
+              "runtime.extraHosts",
+              "runtime.devices",
+              "runtime.gpus",
+              "runtime.ulimits",
+              "runtime.deviceCgroupRules",
+              "runtime.stopTimeout",
+              "runtime.restartRetries",
+              "runtime.memory",
+              "runtime.memorySwap",
+              "runtime.memoryReservation",
+              "runtime.memorySwappiness",
+              "runtime.nanoCpus",
+              "runtime.cpuShares",
+              "runtime.cpuQuota",
+              "runtime.cpuPeriod",
+              "runtime.pidsLimit",
+              "runtime.shmSize",
+              "runtime.oomScoreAdj",
+              "runtime.init",
+              "runtime.openStdin",
+              "runtime.tty",
+              "runtime.readOnlyRootfs",
+              "runtime.autoRemove",
+              "runtime.oomKillDisable",
+              "runtime.logOptions",
+              "runtime.sysctls",
+              "runtime.storageOptions",
+              "runtime.tmpfs",
+              "runtime.healthcheck",
+              "runtime.healthcheck.test",
+              "runtime.healthcheck.interval",
+              "runtime.healthcheck.timeout",
+              "runtime.healthcheck.startPeriod",
+              "runtime.healthcheck.startInterval",
+              "runtime.healthcheck.retries"
+            ]
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512
+          },
+          "index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 2147483647
+          }
+        }
+      },
+      "ConfigurationChange": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "kind",
+          "sensitive"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "templateFields",
+              "name",
+              "image",
+              "network",
+              "networks",
+              "privileged",
+              "start",
+              "autoStart",
+              "environment",
+              "labels",
+              "ports",
+              "mounts",
+              "metadata",
+              "metadata.iconUrl",
+              "metadata.webUi",
+              "metadata.shell",
+              "extraParams",
+              "postArgs",
+              "runtime",
+              "runtime.user",
+              "runtime.workingDir",
+              "runtime.hostname",
+              "runtime.domainname",
+              "runtime.stopSignal",
+              "runtime.restartPolicy",
+              "runtime.logDriver",
+              "runtime.cpuSet",
+              "runtime.cpuSetMems",
+              "runtime.runtime",
+              "runtime.pidMode",
+              "runtime.ipcMode",
+              "runtime.utsMode",
+              "runtime.usernsMode",
+              "runtime.cgroupnsMode",
+              "runtime.cgroupParent",
+              "runtime.entrypoint",
+              "runtime.cmd",
+              "runtime.groupAdd",
+              "runtime.capAdd",
+              "runtime.capDrop",
+              "runtime.securityOpt",
+              "runtime.dns",
+              "runtime.dnsSearch",
+              "runtime.dnsOptions",
+              "runtime.extraHosts",
+              "runtime.devices",
+              "runtime.gpus",
+              "runtime.ulimits",
+              "runtime.deviceCgroupRules",
+              "runtime.stopTimeout",
+              "runtime.restartRetries",
+              "runtime.memory",
+              "runtime.memorySwap",
+              "runtime.memoryReservation",
+              "runtime.memorySwappiness",
+              "runtime.nanoCpus",
+              "runtime.cpuShares",
+              "runtime.cpuQuota",
+              "runtime.cpuPeriod",
+              "runtime.pidsLimit",
+              "runtime.shmSize",
+              "runtime.oomScoreAdj",
+              "runtime.init",
+              "runtime.openStdin",
+              "runtime.tty",
+              "runtime.readOnlyRootfs",
+              "runtime.autoRemove",
+              "runtime.oomKillDisable",
+              "runtime.logOptions",
+              "runtime.sysctls",
+              "runtime.storageOptions",
+              "runtime.tmpfs",
+              "runtime.healthcheck",
+              "runtime.healthcheck.test",
+              "runtime.healthcheck.interval",
+              "runtime.healthcheck.timeout",
+              "runtime.healthcheck.startPeriod",
+              "runtime.healthcheck.startInterval",
+              "runtime.healthcheck.retries"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ADDED",
+              "MODIFIED",
+              "REMOVED",
+              "CHANGED"
+            ]
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 512
+          },
+          "before": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "after": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "sensitive": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

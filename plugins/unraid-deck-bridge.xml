@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Plugin>
+  <Name>Unraid Deck Bridge</Name>
+  <PluginAuthor>mccray</PluginAuthor>
+  <PluginURL>https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/unraid-deck-bridge.plg</PluginURL>
+  <Support>https://github.com/mccray-s/unraid-deck-bridge/issues</Support>
+  <Project>https://github.com/mccray-s/unraid-deck-bridge</Project>
+  <ReadMe>https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/README.md</ReadMe>
+  <Icon>https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/assets/unraid-deck-bridge.png</Icon>
+  <Overview>Management companion for the Unraid Deck iOS app. Adds Docker configuration, templates and image updates, host controls, supported plugin removal, and array and parity controls through the official Unraid API. Uses official authentication and permissions. Requires Linux x86_64 Unraid, a compatible Unraid API, and an existing x64 Node runtime. Installation and removal may briefly interrupt API connections.</Overview>
+  <Category>Tools:Utilities</Category>
+  <MinVer>6.12.0</MinVer>
+</Plugin>

@@ -1,0 +1,859 @@
+type DeckBridgeHealthcheck {
+  test: [String!]
+  interval: Float
+  timeout: Float
+  startPeriod: Float
+  startInterval: Float
+  retries: Float
+}
+
+type DeckBridgeNetworkAttachment {
+  name: String
+  ipv4: String
+  ipv6: String
+  macAddress: String
+  aliases: [String!]
+}
+
+type DeckBridgeRuntime {
+  user: String
+  workingDir: String
+  hostname: String
+  domainname: String
+  stopSignal: String
+  restartPolicy: String
+  logDriver: String
+  cpuSet: String
+  cpuSetMems: String
+  runtime: String
+  pidMode: String
+  ipcMode: String
+  utsMode: String
+  usernsMode: String
+  cgroupnsMode: String
+  cgroupParent: String
+  entrypoint: [String!]
+  cmd: [String!]
+  groupAdd: [String!]
+  capAdd: [String!]
+  capDrop: [String!]
+  securityOpt: [String!]
+  dns: [String!]
+  dnsSearch: [String!]
+  dnsOptions: [String!]
+  extraHosts: [String!]
+  devices: [String!]
+  gpus: [String!]
+  ulimits: [String!]
+  deviceCgroupRules: [String!]
+  stopTimeout: Float
+  restartRetries: Float
+  memory: Float
+  memorySwap: Float
+  memoryReservation: Float
+  memorySwappiness: Float
+  nanoCpus: Float
+  cpuShares: Float
+  cpuQuota: Float
+  cpuPeriod: Float
+  pidsLimit: Float
+  shmSize: Float
+  oomScoreAdj: Float
+  init: Boolean
+  openStdin: Boolean
+  tty: Boolean
+  readOnlyRootfs: Boolean
+  autoRemove: Boolean
+  oomKillDisable: Boolean
+  logOptions: JSON
+  sysctls: JSON
+  storageOptions: JSON
+  tmpfs: JSON
+  healthcheck: DeckBridgeHealthcheck
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
+type DeckBridgeNetworkInfo {
+  id: String!
+  name: String!
+  driver: String!
+  ipv6: Boolean!
+  internal: Boolean!
+  subnets: [String!]!
+}
+
+type DeckBridgeDockerEnvironment {
+  engineApiVersion: String!
+  cpuCount: Int!
+  memoryTotal: Float!
+  defaultRuntime: String!
+  runtimes: [String!]!
+  networks: [DeckBridgeNetworkInfo!]!
+}
+
+type DeckBridgeDeviceInfo {
+  path: String!
+  kind: String!
+}
+
+type DeckBridgeInfo {
+  principalId: String!
+  engineApiVersion: String
+  compatibility: JSON
+  version: String!
+  coreOnline: Boolean!
+  compatible: Boolean!
+  dockerAvailable: Boolean!
+  capabilities: [String!]!
+  reason: String
+}
+
+type DeckBridgeDockerMetadata {
+  iconUrl: String!
+  webUi: String!
+  shell: String!
+}
+
+type DeckBridgeLocalTemplate {
+  id: String!
+  kind: DeckBridgeLocalTemplateKind!
+  revision: String!
+  name: String!
+  image: String
+  iconUrl: String
+  containerExists: Boolean
+  containerId: String
+  issueCode: String
+}
+
+enum DeckBridgeLocalTemplateKind {
+  USER
+  DEFAULT
+}
+
+type DeckBridgeDockerEditLimitation {
+  code: String!
+  field: String
+  blocking: Boolean!
+}
+
+type DeckBridgeDockerEditability {
+  editable: Boolean!
+  source: DeckBridgeDockerConfigurationSource
+  reasonCode: String
+  limitations: [DeckBridgeDockerEditLimitation!]!
+}
+
+enum DeckBridgeDockerConfigurationSource {
+  UNRAID_TEMPLATE
+  ENGINE_INSPECT
+}
+
+type DeckBridgeConfigurationIssue {
+  field: String!
+  target: String
+  index: Int
+}
+
+type DeckBridgeConfigurationChange {
+  field: String!
+  kind: DeckBridgeConfigurationChangeKind!
+  target: String
+  before: String
+  after: String
+  sensitive: Boolean!
+}
+
+enum DeckBridgeConfigurationChangeKind {
+  ADDED
+  MODIFIED
+  REMOVED
+  CHANGED
+}
+
+type DeckBridgePlan {
+  changeSummary: [DeckBridgeConfigurationChange!]!
+  source: DeckBridgeDockerConfigurationSource!
+  sourceAfter: DeckBridgeDockerConfigurationSource!
+  targetContainerId: String
+  limitations: [DeckBridgeDockerEditLimitation!]!
+  metadata: DeckBridgeDockerMetadata!
+  updateImage: Boolean!
+  templateReuse: Boolean!
+  directoriesToCreate: [String!]!
+  id: String!
+  kind: String!
+  expires: String!
+  config: JSON!
+  changed: [String!]!
+  warnings: [String!]!
+}
+
+type DeckBridgeEvent {
+  sequence: Int!
+  time: String!
+  stage: String!
+  code: String
+  message: String!
+}
+
+type DeckBridgeError {
+  code: String!
+  message: String!
+  issue: DeckBridgeConfigurationIssue
+}
+
+type DeckBridgeRecoveryVolume {
+  name: String!
+  target: String!
+  created: Boolean!
+  exists: Boolean
+  owned: Boolean
+}
+
+type DeckBridgeRecovery {
+  volumes: [DeckBridgeRecoveryVolume!]
+  checkedAt: String!
+  reason: String!
+  oldExists: Boolean
+  oldRunning: Boolean
+  replacementExists: Boolean
+  replacementRunning: Boolean
+  templateMatches: Boolean
+  autoStartMatches: Boolean
+  engineConfigurationMatches: Boolean
+}
+
+type DeckBridgePullLayerProgress {
+  id: String!
+  phase: String!
+  current: Float
+  total: Float
+}
+
+type DeckBridgePullProgress {
+  revision: Int!
+  finished: Boolean!
+  layers: [DeckBridgePullLayerProgress!]!
+}
+
+type DeckBridgeOperation {
+  domain: String!
+  imageUpdate: Boolean!
+  canCancel: Boolean!
+  cancelRequested: Boolean!
+  imageUpdateResult: DeckBridgeImageUpdateResult
+
+  """
+  Configuration outcome for non-image-update Docker INSTALL, EDIT, ENGINE_EDIT, TEMPLATE_ADOPT and TEMPLATE_REPLACE. UNKNOWN must be explicit; a missing outcome remains null. Null for other operations.
+  """
+  configurationResult: DeckBridgeConfigurationResult
+
+  """
+  Startup outcome for ordinary Docker configuration operations. ACCEPTED means Start was accepted, not application readiness. UNKNOWN must be explicit; a missing outcome remains null. Null for other operations.
+  """
+  startResult: DeckBridgeStartResult
+  bootId: String
+  id: String!
+  kind: String!
+  status: String!
+  stage: String!
+  created: String!
+  updated: String!
+  name: String!
+  containerId: String
+  oldId: String
+  error: DeckBridgeError
+  events: [DeckBridgeEvent!]!
+  recovery: DeckBridgeRecovery
+  pullProgress: DeckBridgePullProgress
+}
+
+enum DeckBridgeImageUpdateResult {
+  IMAGE_UPDATED
+  IMAGE_UNCHANGED
+}
+
+enum DeckBridgeConfigurationResult {
+  NOT_APPLIED
+  APPLIED
+  UNKNOWN
+}
+
+enum DeckBridgeStartResult {
+  NOT_REQUESTED
+  ACCEPTED
+  FAILED
+  UNKNOWN
+}
+
+type DeckBridgeDockerUpdateAccess {
+  principalId: String!
+  coreOnline: Boolean!
+  dockerAvailable: Boolean!
+  capabilities: [String!]!
+  reason: String
+}
+
+type DeckBridgeImagePlatform {
+  os: String!
+  architecture: String!
+  variant: String
+}
+
+type DeckBridgeUpdateCheckItem {
+  containerId: String!
+  name: String!
+  currentImageId: String
+  imageReference: String
+  platform: DeckBridgeImagePlatform
+  source: DeckBridgeDockerConfigurationSource
+  state: DeckBridgeUpdateCheckItemState!
+  availability: DeckBridgeImageUpdateAvailability!
+  canUpdate: Boolean!
+  reasonCode: String
+  checkedAt: String
+  expiresAt: String
+  fromCache: Boolean!
+  revision: Int!
+  remoteImageId: String
+}
+
+enum DeckBridgeUpdateCheckItemState {
+  PENDING
+  CHECKING
+  COMPLETED
+  SKIPPED
+  FAILED
+}
+
+enum DeckBridgeImageUpdateAvailability {
+  AVAILABLE
+  CURRENT
+  UNKNOWN
+  PINNED
+  UNTRACKED
+  SKIPPED
+}
+
+type DeckBridgeUpdateCheck {
+  id: String!
+  status: DeckBridgeUpdateCheckStatus!
+  revision: Int!
+  eventSequence: Int!
+  total: Int!
+  completed: Int!
+  available: Int!
+  skipped: Int!
+  failed: Int!
+  created: String!
+  updated: String!
+  nextRefreshAt: String
+  items: [DeckBridgeUpdateCheckItem!]!
+  nextOffset: Int
+  error: DeckBridgeError
+}
+
+enum DeckBridgeUpdateCheckStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  INTERRUPTED
+}
+
+type DeckBridgeUpdateCheckEvent {
+  sequence: Int!
+  kind: DeckBridgeUpdateCheckEventKind!
+  item: DeckBridgeUpdateCheckItem
+  status: DeckBridgeUpdateCheckStatus!
+  completed: Int!
+  total: Int!
+}
+
+enum DeckBridgeUpdateCheckEventKind {
+  ITEM_CHANGED
+  COMPLETED
+}
+
+type DeckBridgeImageUpdateBatchItem {
+  index: Int!
+  revision: Int!
+  sourceContainerId: String!
+  currentImageId: String!
+  operationId: String
+  status: DeckBridgeImageUpdateBatchItemStatus!
+  resultContainerId: String
+  reasonCode: String
+  imageUpdateResult: DeckBridgeImageUpdateResult
+}
+
+enum DeckBridgeImageUpdateBatchItemStatus {
+  WAITING
+  RUNNING
+  UPDATED
+  UNCHANGED
+  FAILED
+  SKIPPED
+  NEEDS_ATTENTION
+  INTERRUPTED
+  CANCELLED
+}
+
+type DeckBridgeImageUpdateBatch {
+  id: String!
+  status: String!
+  revision: Int!
+  eventSequence: Int!
+  canCancel: Boolean!
+  cancelRequested: Boolean!
+  total: Int!
+  completed: Int!
+  updated: Int!
+  unchanged: Int!
+  failed: Int!
+  skipped: Int!
+  needsAttention: Int!
+  cancelled: Int!
+  activeOperation: DeckBridgeOperation
+  items: [DeckBridgeImageUpdateBatchItem!]!
+  nextOffset: Int
+}
+
+type DeckBridgeImageUpdateBatchEvent {
+  sequence: Int!
+  kind: DeckBridgeImageUpdateBatchEventKind!
+  item: DeckBridgeImageUpdateBatchItem
+  activeOperation: DeckBridgeOperation
+  status: String!
+  completed: Int!
+  total: Int!
+  canCancel: Boolean!
+  cancelRequested: Boolean!
+}
+
+enum DeckBridgeImageUpdateBatchEventKind {
+  ITEM_CHANGED
+  ACTIVE_PROGRESS
+  COMPLETED
+}
+
+type DeckBridgeDraftField {
+  id: String!
+  type: String!
+  name: String!
+  target: String!
+  description: String!
+  value: String!
+  mode: String!
+  required: Boolean!
+  sensitive: Boolean!
+  hasValue: Boolean!
+  advanced: Boolean!
+  defaultValue: String!
+  hasDefaultValue: Boolean!
+  templateEditable: Boolean!
+  options: [String!]!
+}
+
+type DeckBridgeTemplateDraft {
+  source: DeckBridgeDockerConfigurationSource!
+  limitations: [DeckBridgeDockerEditLimitation!]!
+  metadata: DeckBridgeDockerMetadata!
+  runtime: DeckBridgeRuntime
+  extraParams: String
+  postArgs: String
+  networks: [DeckBridgeNetworkAttachment!]
+  containerId: String
+  running: Boolean
+  autoStart: Boolean
+  privileged: Boolean!
+  id: String!
+  expires: String!
+  sourceUrl: String!
+  digest: String!
+  name: String!
+  image: String!
+  network: String!
+  appDataRoot: String!
+  fields: [DeckBridgeDraftField!]!
+}
+
+type DeckBridgeCreationDefaults {
+  appDataRoot: String!
+}
+
+type DeckBridgeQueries {
+  system: DeckBridgeSystemQueries!
+  plugins: DeckBridgePluginQueries!
+  array: DeckBridgeArrayQueries!
+  info: DeckBridgeInfo!
+  docker: DeckBridgeDockerQueries!
+  operations: DeckBridgeOperationsQueries!
+}
+
+type DeckBridgeMutations {
+  system: DeckBridgeSystemMutations!
+  plugins: DeckBridgePluginMutations!
+  array: DeckBridgeArrayMutations!
+  docker: DeckBridgeDockerMutations!
+}
+
+type DeckBridgeDockerQueries {
+  localTemplates: [DeckBridgeLocalTemplate!]!
+  updateAccess: DeckBridgeDockerUpdateAccess!
+  updateCheck(id: String, offset: Int! = 0, limit: Int! = 100): DeckBridgeUpdateCheck
+  editability(containerId: String!): DeckBridgeDockerEditability!
+  templateAdoption(containerId: String!): DeckBridgeDockerEditability!
+  environment: DeckBridgeDockerEnvironment!
+  devices: [DeckBridgeDeviceInfo!]!
+  config(containerId: String!): DeckBridgeTemplateDraft!
+  creationDefaults: DeckBridgeCreationDefaults!
+}
+
+type DeckBridgeDockerMutations {
+  checkUpdates(requestId: String!, force: Boolean! = false): DeckBridgeUpdateCheck!
+  prepareImageUpdate(input: DeckBridgeImageUpdateTargetInput!): DeckBridgePlan!
+  updateContainers(input: DeckBridgeImageUpdateBatchInput!): DeckBridgeOperation!
+  importTemplate(input: DeckBridgeTemplateImportInput!): DeckBridgeTemplateDraft!
+  prepareInstall(input: DeckBridgeDockerConfigurationInput!): DeckBridgePlan!
+  prepareEdit(containerId: String!, input: DeckBridgeDockerConfigurationInput!, updateImage: Boolean! = false, adoptTemplate: Boolean! = false): DeckBridgePlan!
+  prepareTemplateReplacement(containerId: String!, input: DeckBridgeDockerConfigurationInput!): DeckBridgePlan!
+  install(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+  edit(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+  cancelInstall(operationId: String!): DeckBridgeOperation!
+  cancelEdit(operationId: String!): DeckBridgeOperation!
+  restart(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+}
+
+input DeckBridgeImageUpdateTargetInput {
+  checkId: String!
+  containerId: String!
+  currentImageId: String!
+  revision: Int!
+  allowMissingTemplate: Boolean! = false
+}
+
+input DeckBridgeImageUpdateBatchInput {
+  requestId: String!
+  targets: [DeckBridgeImageUpdateTargetInput!]!
+}
+
+input DeckBridgeTemplateImportInput {
+  source: DeckBridgeTemplateImportSource!
+  url: String
+  xml: String
+  templateId: String
+  revision: String
+}
+
+enum DeckBridgeTemplateImportSource {
+  URL
+  XML
+  LOCAL
+}
+
+input DeckBridgeDockerConfigurationInput {
+  metadata: DeckBridgeDockerMetadataInput
+  draftId: String
+  name: String!
+  image: String!
+  network: String!
+  privileged: Boolean!
+  start: Boolean!
+  autoStart: Boolean!
+  ports: [DeckBridgePortInput!]!
+  mounts: [DeckBridgeMountInput!]!
+  environment: [DeckBridgeCustomValueInput!]!
+  labels: [DeckBridgeCustomValueInput!]!
+  templateFields: [DeckBridgeTemplateFieldInput!]
+  runtime: DeckBridgeRuntimeInput
+  extraParams: String
+  postArgs: String
+  networks: [DeckBridgeNetworkAttachmentInput!]
+}
+
+input DeckBridgeDockerMetadataInput {
+  iconUrl: String
+  webUi: String
+  shell: String
+}
+
+input DeckBridgePortInput {
+  hostIp: String
+  hostPort: Int!
+  containerPort: Int!
+  protocol: String!
+}
+
+input DeckBridgeMountInput {
+  type: String
+  mode: String
+  source: String!
+  target: String!
+  readOnly: Boolean!
+}
+
+input DeckBridgeCustomValueInput {
+  name: String!
+  value: String!
+  keepFieldId: String
+  sensitive: Boolean!
+}
+
+input DeckBridgeTemplateFieldInput {
+  type: String!
+  index: Int!
+  draftFieldId: String
+  displayName: String
+  defaultValue: String
+  description: String
+}
+
+input DeckBridgeRuntimeInput {
+  user: String
+  workingDir: String
+  hostname: String
+  domainname: String
+  stopSignal: String
+  restartPolicy: String
+  logDriver: String
+  cpuSet: String
+  cpuSetMems: String
+  runtime: String
+  pidMode: String
+  ipcMode: String
+  utsMode: String
+  usernsMode: String
+  cgroupnsMode: String
+  cgroupParent: String
+  entrypoint: [String!]
+  cmd: [String!]
+  groupAdd: [String!]
+  capAdd: [String!]
+  capDrop: [String!]
+  securityOpt: [String!]
+  dns: [String!]
+  dnsSearch: [String!]
+  dnsOptions: [String!]
+  extraHosts: [String!]
+  devices: [String!]
+  gpus: [String!]
+  ulimits: [String!]
+  deviceCgroupRules: [String!]
+  stopTimeout: Float
+  restartRetries: Float
+  memory: Float
+  memorySwap: Float
+  memoryReservation: Float
+  memorySwappiness: Float
+  nanoCpus: Float
+  cpuShares: Float
+  cpuQuota: Float
+  cpuPeriod: Float
+  pidsLimit: Float
+  shmSize: Float
+  oomScoreAdj: Float
+  init: Boolean
+  openStdin: Boolean
+  tty: Boolean
+  readOnlyRootfs: Boolean
+  autoRemove: Boolean
+  oomKillDisable: Boolean
+  logOptions: JSON
+  sysctls: JSON
+  storageOptions: JSON
+  tmpfs: JSON
+  healthcheck: DeckBridgeHealthcheckInput
+}
+
+input DeckBridgeHealthcheckInput {
+  test: [String!]
+  interval: Float
+  timeout: Float
+  startPeriod: Float
+  startInterval: Float
+  retries: Float
+}
+
+input DeckBridgeNetworkAttachmentInput {
+  name: String
+  ipv4: String
+  ipv6: String
+  macAddress: String
+  aliases: [String!]
+}
+
+input DeckBridgeSubmitInput {
+  planId: String
+  containerId: String
+  requestId: String!
+}
+
+type DeckBridgeOperationsQueries {
+  array: DeckBridgeArrayOperations!
+  plugins: DeckBridgePluginOperations!
+  system: DeckBridgeSystemOperations!
+  docker: DeckBridgeDockerOperations!
+}
+
+type DeckBridgeSystemQueries {
+  status: DeckBridgeSystemStatus!
+}
+
+type DeckBridgeSystemMutations {
+  prepare(input: DeckBridgeHostPreviewInput!): DeckBridgeHostPlan!
+  shutdown(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+  reboot(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+}
+
+input DeckBridgeHostPreviewInput {
+  action: String!
+}
+
+type DeckBridgePluginQueries {
+  installed: [DeckBridgePlugin!]!
+}
+
+type DeckBridgePluginMutations {
+  prepareUninstall(pluginId: String!): DeckBridgeHostPlan!
+  uninstall(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+}
+
+type DeckBridgeArrayQueries {
+  status: DeckBridgeArrayStatus!
+}
+
+type DeckBridgeArrayMutations {
+  prepare(input: DeckBridgeHostPreviewInput!): DeckBridgeHostPlan!
+  prepareParity(input: DeckBridgeParityPreviewInput!): DeckBridgeHostPlan!
+  startParity(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+  pauseParity(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+  resumeParity(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+  cancelParity(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+  start(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+  stop(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+}
+
+input DeckBridgeParityPreviewInput {
+  action: DeckBridgeParityAction!
+  correct: Boolean
+}
+
+enum DeckBridgeParityAction {
+  START
+  PAUSE
+  RESUME
+  CANCEL
+}
+
+type DeckBridgeSystemStatus {
+  bootId: String!
+  shutdownTimeout: String!
+  powerMode: String!
+  liveExecutionVerified: Boolean!
+}
+
+type DeckBridgeParityLastResult {
+  state: String!
+  startedAt: String
+  finishedAt: String
+  elapsedSeconds: String
+  errorCount: String
+}
+
+type DeckBridgeParityStatus {
+  lastResult: DeckBridgeParityLastResult
+  state: String!
+  kind: String!
+  correcting: Boolean
+  positionBytes: String
+  totalBytes: String
+  speedBytesPerSecond: String
+
+  """
+  Current host-reported parity duration seconds using official API semantics, or null when evidence is unknown or invalid. Resume may reset the start, so this may describe only the latest run segment, not the whole operation or all pauses; independent of lastResult.
+  """
+  elapsedSeconds: String
+  errorCount: String
+  canStart: Boolean!
+  canPause: Boolean!
+  canResume: Boolean!
+  canCancel: Boolean!
+  reason: String
+}
+
+type DeckBridgeArrayStatus {
+  bootId: String!
+  observedAt: String!
+  parity: DeckBridgeParityStatus!
+  state: String!
+  mdState: String!
+  fsState: String!
+  progress: String!
+  canStart: Boolean!
+  canStop: Boolean!
+  liveExecutionVerified: Boolean!
+  reason: String
+}
+
+type DeckBridgePlugin {
+  id: String!
+  name: String!
+  version: String!
+  uninstallable: Boolean!
+  reason: String
+}
+
+type DeckBridgeHostPlan {
+  id: String!
+  expires: String!
+  domain: String!
+  action: String!
+  target: String!
+  bootId: String!
+  summary: String!
+  correct: Boolean
+  warnings: [String!]!
+}
+
+type DeckBridgeDockerOperations {
+  imageUpdateBatch(id: String!, offset: Int! = 0, limit: Int! = 100): DeckBridgeImageUpdateBatch!
+  get(id: String!, after: Int! = 0): DeckBridgeOperation!
+  byRequestId(requestId: String!): DeckBridgeOperation
+}
+
+type DeckBridgeSystemOperations {
+  get(id: String!, after: Int! = 0): DeckBridgeOperation!
+  byRequestId(requestId: String!): DeckBridgeOperation
+}
+
+type DeckBridgePluginOperations {
+  get(id: String!, after: Int! = 0): DeckBridgeOperation!
+  byRequestId(requestId: String!): DeckBridgeOperation
+}
+
+type DeckBridgeArrayOperations {
+  get(id: String!, after: Int! = 0): DeckBridgeOperation!
+  byRequestId(requestId: String!): DeckBridgeOperation
+}
+
+type Query {
+  deckBridge: DeckBridgeQueries!
+}
+
+type Mutation {
+  deckBridge: DeckBridgeMutations!
+}
+
+type Subscription {
+  deckBridgeDockerUpdateCheckEvents(id: String!, after: Int! = 0): DeckBridgeUpdateCheckEvent!
+  deckBridgeDockerImageUpdateBatchEvents(id: String!, after: Int! = 0): DeckBridgeImageUpdateBatchEvent!
+  deckBridgeDockerOperationEvents(id: String!, after: Int! = 0): DeckBridgeEvent!
+  deckBridgeSystemOperationEvents(id: String!, after: Int! = 0): DeckBridgeEvent!
+  deckBridgePluginOperationEvents(id: String!, after: Int! = 0): DeckBridgeEvent!
+  deckBridgeArrayOperationEvents(id: String!, after: Int! = 0): DeckBridgeEvent!
+}

@@ -1,0 +1,1321 @@
+{
+  "format": 1,
+  "minimumOSVersion": "6.12.0",
+  "api": {
+    "4.25.3": {
+      "commit": "34075e44c551a8fec3d294e1ed127699f1e560f2",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "276bddeeda55b07c4f864ca8a626227790f0cbbe3e17f3aacb9fe7a0a2bc5e56",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "73f7d5dd2b44460e49ab785a7a7a5131d4c50e262014ea3173f6cfb6deeec3d6",
+        "api/package.json": "e20f099fe83d8247943828f1a07bf119008d81ee7f9d6111b7a495ce028c9cb0"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "5087e8ea4afbab84b30d21f769a678cf3fbd48113afeaffb21610f21eb0a4d82"
+      }
+    },
+    "4.26.0": {
+      "commit": "ee0f2402336860733f5927827d23fad955be0ac4",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "b5a3b8b0dd00d0ca1e381a709018e6502a26468d9d5b448d7d8ed8da1b1177b4"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "3fb2f3aa158cf869a86dfee643d77aeda0f2c9251c47980e790f731f84a7c498"
+      }
+    },
+    "4.26.1": {
+      "commit": "3d4f193fa427a512529c3e2cf65fd601a34f37c8",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "fbd0826a1285599b3b8470a0f11a25cb794fe3d81c9750611ff7ce2ef0767a68"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "3fb2f3aa158cf869a86dfee643d77aeda0f2c9251c47980e790f731f84a7c498"
+      }
+    },
+    "4.26.2": {
+      "commit": "6b6b78fa2e198424034ed7aac3def99ad0571770",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "621ea9a55976bf4b15e355afa42e76b8df964aefade8ea1c5b184117a2a99822"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "3fb2f3aa158cf869a86dfee643d77aeda0f2c9251c47980e790f731f84a7c498"
+      }
+    },
+    "4.27.0": {
+      "commit": "c71b0487adf79ea3d3b89cbe687c35f779c916bf",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "431703e7951e178692fc7a86436724d25b5ae1eadf7fff4cdd1a3de7b90139b0"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "3fb2f3aa158cf869a86dfee643d77aeda0f2c9251c47980e790f731f84a7c498"
+      }
+    },
+    "4.27.1": {
+      "commit": "330e81a48450e9d7aa54d4312ef16ab156a8b23a",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "20acc7301ccddbe3a2048932ae5d697cd51cc0aa4d1835d7cc7e2bd44332ced5"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "3fb2f3aa158cf869a86dfee643d77aeda0f2c9251c47980e790f731f84a7c498"
+      }
+    },
+    "4.27.2": {
+      "commit": "375dcd0598b64de52f6b2d6a6a45e7cc88f24272",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "a9410a22624156e629e254475ec46867174ed84d10d5c32890430200464ee145"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "3fb2f3aa158cf869a86dfee643d77aeda0f2c9251c47980e790f731f84a7c498"
+      }
+    },
+    "4.28.0": {
+      "commit": "ca3bee4ad55173829bb4b27d3269c692f3c77051",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "a51dcdb8dc2c1d94715e55352646d9bd9fe8864e4da4de03ccfaec2e1f8d7512"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "f2ae793ab6f6d52ccfee47f48facf1dfd5cf425adc3a9bc775c55e63670f7d67"
+      }
+    },
+    "4.28.1": {
+      "commit": "01a63fd86bb1fa2d4fb3fd4f55836dec5821a034",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "c57b9c0549b9c322554af58730399804164441c705575886558b6800530b46ff"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "f2ae793ab6f6d52ccfee47f48facf1dfd5cf425adc3a9bc775c55e63670f7d67"
+      }
+    },
+    "4.28.2": {
+      "commit": "d13a1f6174b1f1c400e5f4147a67ba7508d1e200",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "63b00ec4674886ee168c8d59d8294536995f067b807951dba871c24c5c9a5647"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "f2ae793ab6f6d52ccfee47f48facf1dfd5cf425adc3a9bc775c55e63670f7d67"
+      }
+    },
+    "4.29.0": {
+      "commit": "d6055f102bd8a84bf90260b5db5043e9e45b82db",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "ddbbb0de1885d46b2ac3ab218cc7e17e70adfd724a1e0ad004a2a8bc5b335592"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "3c203b8346134ec73714aa095df1ab81af26d7cbfa95df53fe2ccccaa2e231ed"
+      }
+    },
+    "4.29.1": {
+      "commit": "e42d619b6d62e4b1debfd27c3e0c5b18ec84bc4b",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "e5809101e164b8131575014899ba826aa62d1b47198aeb01f60c3ebc977b910f",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "9c719ea85135474baa24e20fc254684a43af7e05827b3d365f74b2e1c9a33aeb"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "f2ae793ab6f6d52ccfee47f48facf1dfd5cf425adc3a9bc775c55e63670f7d67"
+      }
+    },
+    "4.29.2": {
+      "commit": "c39b0b267c0cb3f980c402dfe618cf4eb0502cff",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c6e372cfad530c44a48a366b0892cb3d4d10bcfbd7bb86666a5d64c2f6aff3fe",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "4059c37277eb67e131e075c1b1176dd20e4f64e915042fbac39e202cabb117da"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "f2ae793ab6f6d52ccfee47f48facf1dfd5cf425adc3a9bc775c55e63670f7d67"
+      }
+    },
+    "4.30.0": {
+      "commit": "dcb3a5be6431a73001a7fe85a830974f2d87209e",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "b249b68c25d2ec39941be290e7c864aaa0464d41fd29a2b04c0ef5a301d433fb"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "b1c8d6ba3075baeb37135e8fb698a0c8a1efac5056fd473172b86420096c4cb9"
+      }
+    },
+    "4.30.1": {
+      "commit": "50726c4906b5333ca98bdd3e5e05913ca76f58f7",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "e248ff278be7263f27d23f72d34d961c2c5a622f0b20e7f35b7ab90250b84494"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "b1c8d6ba3075baeb37135e8fb698a0c8a1efac5056fd473172b86420096c4cb9"
+      }
+    },
+    "4.31.0": {
+      "commit": "8f4ea98042d01180769d3cb00f1f49b0f247b468",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "56f958d3e9c03660f756ec9f009f44a0928ef2a2bbcc2642a5c5d70a386d0135"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "a4bec75c21b1bbd074b6e95fef462f4bf4c2bbb21c8334c4d8ca2931ca296c77"
+      }
+    },
+    "4.31.1": {
+      "commit": "726ae51efb9416bd4fbad2a742e126302a6dcbeb",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "9a5a9d62d3b87f3a65b508fc2a5f797a8e943c26c2e3437d38241c7469c8fa3a"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "a4bec75c21b1bbd074b6e95fef462f4bf4c2bbb21c8334c4d8ca2931ca296c77"
+      }
+    },
+    "4.32.0": {
+      "commit": "160c5b13636876e635c3d14e63adb8be75724ed3",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "3e5051c28b974fe3fd3f5992f82487df83e7f970c75f4e9729c11af0c9e1cb9b"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "0ba5f5185c2abd40e2047c79f368ef461bfbd57a07a3999bd7ca237df6ed4263"
+      }
+    },
+    "4.32.1": {
+      "commit": "5c297da13bf2ab28f31ff60eae3a9faca8ed996b",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "ceaa3f45413d91b3d1f300bd5f1218cf8a5b098860c87df6ef8b283b94406c24"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "0ba5f5185c2abd40e2047c79f368ef461bfbd57a07a3999bd7ca237df6ed4263"
+      }
+    },
+    "4.32.2": {
+      "commit": "12933aa0d8d6cd2170b9baa9202516c028f02eb8",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "f2ca57effb2b65232e1e4f6d87d562a7344f093238403619cc50f9f8680b8410"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "0ba5f5185c2abd40e2047c79f368ef461bfbd57a07a3999bd7ca237df6ed4263"
+      }
+    },
+    "4.32.3": {
+      "commit": "ad4834a5bc77f783a95ed6fa8e67af28bd31759e",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "fc4b9e38a0752b3567569c426c768a7fab1bef5ad1cbfdb90f0055b0e08d77ac"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "0ba5f5185c2abd40e2047c79f368ef461bfbd57a07a3999bd7ca237df6ed4263"
+      }
+    },
+    "4.33.0": {
+      "commit": "7af4c774d285e943eea3897bdb4abcd993162191",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "d715e95bd2e64e0ad1fe7f389f4371d1d74022f8e98961c00c90da1de6573dad"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "0ba5f5185c2abd40e2047c79f368ef461bfbd57a07a3999bd7ca237df6ed4263"
+      }
+    },
+    "4.34.0": {
+      "commit": "a2d48433702d82ad31b102835a3e8c17f6c3e9b3",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "a25b06b3587a483a9bdcd1effb3dcd52bc6230a6ab4f3d1fa4dcc1b32a02853c"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "0ba5f5185c2abd40e2047c79f368ef461bfbd57a07a3999bd7ca237df6ed4263"
+      }
+    },
+    "4.35.0": {
+      "commit": "264ddf0004aeb49b25eaf67a1c2837eb7f74b143",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "c9f564273e07ce53ee4e5d017bba3406e87965a280eb15d84b6bcf62b0e08afa"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "47b4a4bb2270e64d6e5b7c063ae41049e2628d4532616931bcf73c7042f345be"
+      }
+    },
+    "4.35.1": {
+      "commit": "a9625ae20a589e739926923b28ca7efe14233372",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_6",
+      "dependencies": {
+        "@nestjs/common": "11.1.6",
+        "@nestjs/core": "11.1.6",
+        "@nestjs/graphql": "13.1.0",
+        "graphql": "16.11.0",
+        "class-validator": "0.14.2",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "1c13215eb5fdf36b70c4ea80e25a6cb606f05ae46edbab773f2495554b1692f4"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "47b4a4bb2270e64d6e5b7c063ae41049e2628d4532616931bcf73c7042f345be"
+      }
+    },
+    "4.36.0": {
+      "commit": "689620c91c361594acdadb45870ca81f84f6ba95",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "76a776f1e4060b147ab7837881c6d6518a2247ca5583617e00023fe15b289722"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "ae82121994d36886865dff29a507cf1e0848f2d9933a2aed46a91bbf3014cd09"
+      }
+    },
+    "4.36.1": {
+      "commit": "f3205d978fada931da54df4255d41c07489066d9",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "a4af726fe81e491499a279a745620f9bab4eed41a8666332adfe3615331e4a55"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "ae82121994d36886865dff29a507cf1e0848f2d9933a2aed46a91bbf3014cd09"
+      }
+    },
+    "4.37.0": {
+      "commit": "8f6134ed6ba34ccce0bf8d97f8af770ecac46f53",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "f5a0f9fa0b12961f81d8f0ed64a5e2246d43a913c49980588355422f177c4684"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "ae82121994d36886865dff29a507cf1e0848f2d9933a2aed46a91bbf3014cd09"
+      }
+    },
+    "4.37.1": {
+      "commit": "d88013616aa9bee1ac7615dd9873b75b2dfed7e9",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "db9e6909db95fcbd90f36ab397e0ded10ba2ff3c508ad7de2238102cb0d43f04"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "ae82121994d36886865dff29a507cf1e0848f2d9933a2aed46a91bbf3014cd09"
+      }
+    },
+    "4.37.2": {
+      "commit": "a00c99a55c6f16edc02f3e726a1b80930374f33d",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "fb69783eeb0b29ad1ed018558d0a32293d8165deed2bbfdd24e7eae3671194d4"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "ae82121994d36886865dff29a507cf1e0848f2d9933a2aed46a91bbf3014cd09"
+      }
+    },
+    "4.37.3": {
+      "commit": "d50580094fb6831920560003d9775de254d55f11",
+      "authProfile": "LEGACY_AUTHZ",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "46ec89bb6a54925ca43c61752e2c3b42c619c13c793a671a6d30f9835a4855b6"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "b56f97a6944fbb19c568bb1bb6a4232bd72a3096842b3ebbea2ceb7115e07d57",
+        "api/generated-schema.graphql": "ae82121994d36886865dff29a507cf1e0848f2d9933a2aed46a91bbf3014cd09"
+      }
+    },
+    "4.37.4": {
+      "commit": "ad268301ca78da1fa47fd3bb87e60fcedc458c5b",
+      "authProfile": "EXPLICIT_NAMESPACE",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "api/src/unraid-api/auth/authorization.guard.ts": "db7bb221f9a19f51d23c6c3cb4697eb9f2943ad7b229bdb1aaf5f08e7ee62154",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "710a9105bc8feb6240482edd9ba1342f4e0d8d56f18ca123977d9134579435f2"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "52e53562fb0140bec2a11ea5438a502a56519fdc48e9054aa2b51364ccb18fdc",
+        "api/generated-schema.graphql": "dd453b0652ac5261385a0ae49c3d4dcf8f53a40052c1fa4f1c555359c9f6ff23"
+      }
+    },
+    "4.37.5": {
+      "commit": "d4d9733646a7a271eeb345b41648217ea3b10179",
+      "authProfile": "EXPLICIT_NAMESPACE",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "api/src/unraid-api/auth/authorization.guard.ts": "db7bb221f9a19f51d23c6c3cb4697eb9f2943ad7b229bdb1aaf5f08e7ee62154",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "046cc3f62487fdbc3118c245b308afc732087e260905736b9855b29606c48120"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "52e53562fb0140bec2a11ea5438a502a56519fdc48e9054aa2b51364ccb18fdc",
+        "api/generated-schema.graphql": "dd453b0652ac5261385a0ae49c3d4dcf8f53a40052c1fa4f1c555359c9f6ff23"
+      }
+    },
+    "4.37.6": {
+      "commit": "4e27bb8ce274e51664aadf16116a047abeaef468",
+      "authProfile": "EXPLICIT_NAMESPACE",
+      "runtimeProfile": "NEST_11_1_26",
+      "dependencies": {
+        "@nestjs/common": "11.1.26",
+        "@nestjs/core": "11.1.26",
+        "@nestjs/graphql": "13.4.2",
+        "graphql": "16.11.0",
+        "class-validator": "0.15.1",
+        "nest-authz": "2.17.0",
+        "class-transformer": "0.5.1"
+      },
+      "sources": {
+        "api/src/unraid-api/plugin/plugin.module.ts": "7a5790002cdd7bf663cc1a9e191bfaaf4f1d50fb799c719258959631bc66e167",
+        "api/src/unraid-api/plugin/plugin.service.ts": "c4d9d788b3fe5c07f03e8bf9aa7bb5bed3554bb44ab2ca1f7c9e3a91eab94442",
+        "api/src/unraid-api/plugin/plugin.interface.ts": "9970113eb8e9384b3834fe4b461340c43b032f7c13f5aea91f9856770ae91ba0",
+        "api/src/unraid-api/auth/authentication.guard.ts": "c5f23e30c6036b1527d893baf99237789291cfd3d98f043db117046016620250",
+        "api/src/unraid-api/auth/authorization.guard.ts": "db7bb221f9a19f51d23c6c3cb4697eb9f2943ad7b229bdb1aaf5f08e7ee62154",
+        "packages/unraid-shared/src/use-permissions.directive.ts": "9b94f9ab85bb9cd98184eb939fe7e518120fb51cc6f3ee460756293014a0b312",
+        "api/src/unraid-api/cli/plugins/plugin.command.ts": "254f3c998ba40f89318f6e7b963a1443a3ec7aaa0626a378f493c34615ac895c",
+        "api/package.json": "1fca45698fdf3f30e8ebc43fd119ada4d08ba39261973743c96729995cbd18ea"
+      },
+      "auditEvidence": {
+        "api/src/unraid-api/graph/graph.module.ts": "aaadc9bf147155410d06395d1a486bcefdb910e16ea0387971f5a477575cd5c2",
+        "api/src/unraid-api/app/app.module.ts": "52e53562fb0140bec2a11ea5438a502a56519fdc48e9054aa2b51364ccb18fdc",
+        "api/generated-schema.graphql": "dd453b0652ac5261385a0ae49c3d4dcf8f53a40052c1fa4f1c555359c9f6ff23"
+      }
+    }
+  },
+  "os": {
+    "7.2.0": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "1018244c1f0d525b3a9229b7ea597d315cc77120",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.0/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "6e75b010a1fe41ea38930de0912d807a1203940cc35b4a3edf9bcc3ee9d1170d",
+        "/usr/local/etc/rc.d/rc.docker": "ba23789e9eabad7e4447aac6bdcd8ecfa34a6e9ccc6024a0afa5e202eae18072"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "6e75b010a1fe41ea38930de0912d807a1203940cc35b4a3edf9bcc3ee9d1170d",
+        "etc/rc.d/rc.docker": "ba23789e9eabad7e4447aac6bdcd8ecfa34a6e9ccc6024a0afa5e202eae18072",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "ed6626a0394dd1c5ed5ac47a945089be14c98197a4e753efd6ce032f8afd59cb",
+        "emhttp/plugins/dynamix/include/Helpers.php": "84d9adb6269f0c0411a97b7ebcac32a4c8e463aef918546db841167481fc8659",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "bbfd38e8a1b6deff43f26ee7ec073075dce1e3714de50cf7c68a7652220d3274",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_CLASSIC_NETWORK"
+    },
+    "7.2.1": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "b736f9c70d7e629a75c0379006c4e098dc965e2e",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.1/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "6e75b010a1fe41ea38930de0912d807a1203940cc35b4a3edf9bcc3ee9d1170d",
+        "/usr/local/etc/rc.d/rc.docker": "907a56ff5165e38a67ca27ed04f41aee04884a488708c2844d349f9c055628f4"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "6e75b010a1fe41ea38930de0912d807a1203940cc35b4a3edf9bcc3ee9d1170d",
+        "etc/rc.d/rc.docker": "907a56ff5165e38a67ca27ed04f41aee04884a488708c2844d349f9c055628f4",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "19c41d7f1e4e788c7edb30937df680572bbfba50dca15fd8212d32b01c04a074",
+        "emhttp/plugins/dynamix/include/Helpers.php": "5e3a5276d2b0a8044785b81ed3e8b8922fa074635d36a75c4d11bb48791bfa05",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "bbfd38e8a1b6deff43f26ee7ec073075dce1e3714de50cf7c68a7652220d3274",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_CLASSIC_NETWORK"
+    },
+    "7.2.2": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "b736f9c70d7e629a75c0379006c4e098dc965e2e",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.2/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "6e75b010a1fe41ea38930de0912d807a1203940cc35b4a3edf9bcc3ee9d1170d",
+        "/usr/local/etc/rc.d/rc.docker": "907a56ff5165e38a67ca27ed04f41aee04884a488708c2844d349f9c055628f4"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "6e75b010a1fe41ea38930de0912d807a1203940cc35b4a3edf9bcc3ee9d1170d",
+        "etc/rc.d/rc.docker": "907a56ff5165e38a67ca27ed04f41aee04884a488708c2844d349f9c055628f4",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "19c41d7f1e4e788c7edb30937df680572bbfba50dca15fd8212d32b01c04a074",
+        "emhttp/plugins/dynamix/include/Helpers.php": "5e3a5276d2b0a8044785b81ed3e8b8922fa074635d36a75c4d11bb48791bfa05",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "bbfd38e8a1b6deff43f26ee7ec073075dce1e3714de50cf7c68a7652220d3274",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_CLASSIC_NETWORK"
+    },
+    "7.2.3": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "e8b0f569bdf6659e7cc1a7fcc88949eeaa2d1094",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.3/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "9346655b218e2e80c2997a98b01fe0500ae58da05f67adbd9fe7d2e881db2289",
+        "/usr/local/etc/rc.d/rc.docker": "907a56ff5165e38a67ca27ed04f41aee04884a488708c2844d349f9c055628f4"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "9346655b218e2e80c2997a98b01fe0500ae58da05f67adbd9fe7d2e881db2289",
+        "etc/rc.d/rc.docker": "907a56ff5165e38a67ca27ed04f41aee04884a488708c2844d349f9c055628f4",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "19c41d7f1e4e788c7edb30937df680572bbfba50dca15fd8212d32b01c04a074",
+        "emhttp/plugins/dynamix/include/Helpers.php": "5e3a5276d2b0a8044785b81ed3e8b8922fa074635d36a75c4d11bb48791bfa05",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "bbfd38e8a1b6deff43f26ee7ec073075dce1e3714de50cf7c68a7652220d3274",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_CLASSIC_NETWORK"
+    },
+    "7.2.4": {
+      "sourceKind": "RELEASE_BRANCH_HISTORY",
+      "commit": "2ac392d4f96d16e48edc7f1f4b0a4892cac33f5d",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.4/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "9346655b218e2e80c2997a98b01fe0500ae58da05f67adbd9fe7d2e881db2289",
+        "/usr/local/etc/rc.d/rc.docker": "907a56ff5165e38a67ca27ed04f41aee04884a488708c2844d349f9c055628f4"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "ebfc51062c7bd14fd411b531ecb00ddea5889eec6578918a78f4b11a046261ef",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "9346655b218e2e80c2997a98b01fe0500ae58da05f67adbd9fe7d2e881db2289",
+        "etc/rc.d/rc.docker": "907a56ff5165e38a67ca27ed04f41aee04884a488708c2844d349f9c055628f4",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "19c41d7f1e4e788c7edb30937df680572bbfba50dca15fd8212d32b01c04a074",
+        "emhttp/plugins/dynamix/include/Helpers.php": "5e3a5276d2b0a8044785b81ed3e8b8922fa074635d36a75c4d11bb48791bfa05",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "sourceCaveat": "Official release-branch commit preceding release date; not a byte-for-byte published OS archive assertion. Installed Docker Manager fingerprints must match.",
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "bbfd38e8a1b6deff43f26ee7ec073075dce1e3714de50cf7c68a7652220d3274",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_CLASSIC_NETWORK"
+    },
+    "7.2.5": {
+      "sourceKind": "RELEASE_BRANCH_HISTORY",
+      "commit": "2927fb068bd747deb3c15da19370c62f3eb041a3",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.5/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "c81d77edce4a4e487e0d8ae2cf3956f0023883dd3bd6b422dbad21f520e260cb",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "/usr/local/etc/rc.d/rc.docker": "280c93a40a2f41a0d40069d913800471e228abd30f6fc1e62c06b5f9c20c1def"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "c81d77edce4a4e487e0d8ae2cf3956f0023883dd3bd6b422dbad21f520e260cb",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "etc/rc.d/rc.docker": "280c93a40a2f41a0d40069d913800471e228abd30f6fc1e62c06b5f9c20c1def",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "19c41d7f1e4e788c7edb30937df680572bbfba50dca15fd8212d32b01c04a074",
+        "emhttp/plugins/dynamix/include/Helpers.php": "5e3a5276d2b0a8044785b81ed3e8b8922fa074635d36a75c4d11bb48791bfa05",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "sourceCaveat": "Official release-branch commit preceding release date; not a byte-for-byte published OS archive assertion. Installed Docker Manager fingerprints must match.",
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "15eb705dfc306308ea688378fd24dd0094cf6eddfc2c07ec6224db0b642d0a1f",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_ENDPOINT_NETWORK"
+    },
+    "7.2.6": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "aaf524fa90dedc1d03bd71836aa645b3609f388d",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.6/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "c81d77edce4a4e487e0d8ae2cf3956f0023883dd3bd6b422dbad21f520e260cb",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "/usr/local/etc/rc.d/rc.docker": "280c93a40a2f41a0d40069d913800471e228abd30f6fc1e62c06b5f9c20c1def"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "c81d77edce4a4e487e0d8ae2cf3956f0023883dd3bd6b422dbad21f520e260cb",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "etc/rc.d/rc.docker": "280c93a40a2f41a0d40069d913800471e228abd30f6fc1e62c06b5f9c20c1def",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "19c41d7f1e4e788c7edb30937df680572bbfba50dca15fd8212d32b01c04a074",
+        "emhttp/plugins/dynamix/include/Helpers.php": "5e3a5276d2b0a8044785b81ed3e8b8922fa074635d36a75c4d11bb48791bfa05",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "15eb705dfc306308ea688378fd24dd0094cf6eddfc2c07ec6224db0b642d0a1f",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_ENDPOINT_NETWORK"
+    },
+    "7.2.7": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "de7bf2f84443e032dbfa66573593a92b3bb6cd52",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.7/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "c81d77edce4a4e487e0d8ae2cf3956f0023883dd3bd6b422dbad21f520e260cb",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "/usr/local/etc/rc.d/rc.docker": "ebbe3e33fbc40c6485e0534f08534597285941b1e03e2279b5eea2d5c619e3e0"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "c81d77edce4a4e487e0d8ae2cf3956f0023883dd3bd6b422dbad21f520e260cb",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "etc/rc.d/rc.docker": "ebbe3e33fbc40c6485e0534f08534597285941b1e03e2279b5eea2d5c619e3e0",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "19c41d7f1e4e788c7edb30937df680572bbfba50dca15fd8212d32b01c04a074",
+        "emhttp/plugins/dynamix/include/Helpers.php": "5e3a5276d2b0a8044785b81ed3e8b8922fa074635d36a75c4d11bb48791bfa05",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "15eb705dfc306308ea688378fd24dd0094cf6eddfc2c07ec6224db0b642d0a1f",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_ENDPOINT_NETWORK"
+    },
+    "7.2.8": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "5d7da3ddb3f084a1ae84e10672e10b28deea5c9c",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.2.8/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "c81d77edce4a4e487e0d8ae2cf3956f0023883dd3bd6b422dbad21f520e260cb",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "/usr/local/etc/rc.d/rc.docker": "c2f3ee48b8ef363ab2162a03278b9dbb06859926ac0b71817e01390d173e671d"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "c81d77edce4a4e487e0d8ae2cf3956f0023883dd3bd6b422dbad21f520e260cb",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "etc/rc.d/rc.docker": "c2f3ee48b8ef363ab2162a03278b9dbb06859926ac0b71817e01390d173e671d",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "19c41d7f1e4e788c7edb30937df680572bbfba50dca15fd8212d32b01c04a074",
+        "emhttp/plugins/dynamix/include/Helpers.php": "5e3a5276d2b0a8044785b81ed3e8b8922fa074635d36a75c4d11bb48791bfa05",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "5251cc7ddf0352bb695e2b22f85dd7c3df6a3dccd2644d3e47a6649845eb6039"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "15eb705dfc306308ea688378fd24dd0094cf6eddfc2c07ec6224db0b642d0a1f",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_ENDPOINT_NETWORK"
+    },
+    "7.3.0": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "b78d577bd4d6ad59a8209309c7a8decf6e94330d",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.3.0/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "8692c7116e08bd5298983ab831e102da6c74da2cbb444fba8ae75c874ca2a572",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "/usr/local/etc/rc.d/rc.docker": "ebebb4d42ffc95675221154e8ad18297636e83f7da3dcfee1b6b9b9d51dd8390"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "8692c7116e08bd5298983ab831e102da6c74da2cbb444fba8ae75c874ca2a572",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "etc/rc.d/rc.docker": "ebebb4d42ffc95675221154e8ad18297636e83f7da3dcfee1b6b9b9d51dd8390",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "3cc62b1533b8d7b39a5df4075f41ccda576f2c7bad9059e9485c32c5efb4f7ab",
+        "emhttp/plugins/dynamix/include/Helpers.php": "35a3c09fbcd506e18739f144b96311c184b1119a07e7e64bdac047332c0e2d2e",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "678b603f9f9fbae54da8eeace648a2acb1a679d617cd19d3a648d6e712c3622e"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "8a9cd4b3f2cd8a5d5b5930ad1cae41cd3caba238cd57e9aeea589b8a02da8c8b",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_ENDPOINT_NETWORK"
+    },
+    "7.3.1": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "982b3c207599446989e521f13d707cf3809a4318",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.3.1/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "8692c7116e08bd5298983ab831e102da6c74da2cbb444fba8ae75c874ca2a572",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "/usr/local/etc/rc.d/rc.docker": "ebebb4d42ffc95675221154e8ad18297636e83f7da3dcfee1b6b9b9d51dd8390"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "8692c7116e08bd5298983ab831e102da6c74da2cbb444fba8ae75c874ca2a572",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "etc/rc.d/rc.docker": "ebebb4d42ffc95675221154e8ad18297636e83f7da3dcfee1b6b9b9d51dd8390",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "3cc62b1533b8d7b39a5df4075f41ccda576f2c7bad9059e9485c32c5efb4f7ab",
+        "emhttp/plugins/dynamix/include/Helpers.php": "35a3c09fbcd506e18739f144b96311c184b1119a07e7e64bdac047332c0e2d2e",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "678b603f9f9fbae54da8eeace648a2acb1a679d617cd19d3a648d6e712c3622e"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "8a9cd4b3f2cd8a5d5b5930ad1cae41cd3caba238cd57e9aeea589b8a02da8c8b",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_ENDPOINT_NETWORK"
+    },
+    "7.3.2": {
+      "sourceKind": "STABLE_TAG",
+      "commit": "369f0b2994584a6b6c8e6e570f5f86401d289234",
+      "releaseNotes": "https://docs.unraid.net/unraid-os/release-notes/7.3.2/",
+      "dockerProfile": "ORDINARY_CONTAINER_SUBSET",
+      "dockerFiles": {
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "df6bda14817a2b1cd52cee4d7cf14a0e69272bef1be6aea73a692cce251a5826",
+        "/usr/local/emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "/usr/local/etc/rc.d/rc.docker": "0528b5a5ea967a0f64675f61381eadd922a9538b16dcd36b7b1a635d78b955c2"
+      },
+      "sources": {
+        "emhttp/plugins/dynamix.docker.manager/scripts/rebuild_container": "2f02eebd1fbce6ac80fa51eca8fe5c78d0cb8f17f027d14f360c824f6b48ea45",
+        "emhttp/plugins/dynamix.docker.manager/scripts/update_container": "67eef7e26c267b1c5bead99f043d14e568414973b721e035cbdba572824e90ac",
+        "emhttp/plugins/dynamix.docker.manager/include/DockerClient.php": "df6bda14817a2b1cd52cee4d7cf14a0e69272bef1be6aea73a692cce251a5826",
+        "emhttp/plugins/dynamix.docker.manager/include/Helpers.php": "7a555667565ea568b62519081add1b602082c69efc560e86cb178eeb88814bf5",
+        "etc/rc.d/rc.docker": "0528b5a5ea967a0f64675f61381eadd922a9538b16dcd36b7b1a635d78b955c2",
+        "emhttp/plugins/dynamix/DeviceInfo.page": "3cc62b1533b8d7b39a5df4075f41ccda576f2c7bad9059e9485c32c5efb4f7ab",
+        "emhttp/plugins/dynamix/include/Helpers.php": "8ea41a031e904869fc5481080584f8b9fd0e8314c1c7397b44039fff7ba48dc3",
+        "emhttp/plugins/dynamix.plugin.manager/scripts/plugin": "678b603f9f9fbae54da8eeace648a2acb1a679d617cd19d3a648d6e712c3622e"
+      },
+      "auditEvidence": {
+        "emhttp/plugins/dynamix.docker.manager/include/CreateDocker.php": "8a9cd4b3f2cd8a5d5b5930ad1cae41cd3caba238cd57e9aeea589b8a02da8c8b",
+        "emhttp/plugins/dynamix.docker.manager/default.cfg": "9f719a07d73bc4218b3b6ebf3f1fee63d5a090ea7886c6a5ce5a03c8840c33d5",
+        "emhttp/plugins/dynamix.docker.manager/scripts/docker": "eb6f9923cfd0ae4ce8128cbcce5fb0b92b7ded8b3b57a77e97b3d501a7fbbc08"
+      },
+      "templateProfile": "DOCKERMAN_ENDPOINT_NETWORK"
+    }
+  },
+  "liveVerification": {
+    "os": "7.3.2",
+    "api": "4.36.1",
+    "scope": [
+      "historical-plugin-uninstall-and-read-only-host-probes"
+    ],
+    "note": "Historical scoped evidence only; excludes power and array writes. Other combinations require source/runtime contracts; no claim of current physical validation."
+  }
+}

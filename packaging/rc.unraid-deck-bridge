@@ -1,0 +1,153 @@
+#!/bin/bash
+set -u
+run=/var/run/unraid-deck-bridge
+runtime=/usr/local/emhttp/plugins/unraid-deck-bridge/current
+log=/var/log/unraid-deck-bridge.log
+registered() {
+  node --input-type=module - <<'NODE'
+import fs from 'node:fs';
+import path from 'node:path';
+try {
+  const root = '/usr/local/emhttp/plugins/unraid-deck-bridge';
+  const persisted = '/boot/config/plugins/unraid-deck-bridge.plg';
+  const registered = '/var/log/plugins/unraid-deck-bridge.plg';
+  for (const file of [root + '/releases', path.dirname(persisted), path.dirname(registered)]) {
+    if (fs.realpathSync(file) !== file) throw new Error('redirected path');
+  }
+  for (const file of ['/var/run/unraid-deck-bridge/supervisor.lock', '/var/log/unraid-deck-bridge.log']) {
+    let prefix = '';
+    for (const part of file.split('/').filter(Boolean)) {
+      prefix += '/' + part;
+      const stat = fs.lstatSync(prefix, {throwIfNoEntry:false});
+      if (stat?.isSymbolicLink() && !(prefix === '/var/run' && fs.realpathSync(prefix) === '/run'))
+        throw new Error('redirected service path');
+    }
+  }
+  if (!fs.lstatSync(persisted).isFile() || !fs.lstatSync(registered).isSymbolicLink() ||
+      fs.realpathSync(registered) !== persisted) throw new Error('registration missing');
+  const xml = fs.readFileSync(persisted, 'utf8');
+  const plugin = xml.match(/<PLUGIN\b[^>]*>/)?.[0];
+  if (plugin?.match(/\bname\s*=\s*["']([^"']+)["']/)?.[1] !== 'unraid-deck-bridge' ||
+      !/^\d{4}\.\d{2}\.\d{2}\.\d{4}$/.test(plugin?.match(/\bversion\s*=\s*["']([^"']+)["']/)?.[1] || ''))
+    throw new Error('invalid registration');
+  const current = root + '/current';
+  if (!fs.lstatSync(current).isSymbolicLink()) throw new Error('current is not a symlink');
+  const release = fs.realpathSync(current);
+  if (path.dirname(release) !== root + '/releases' ||
+      !fs.lstatSync(release).isDirectory() || !fs.lstatSync(release + '/deck-bridge-core').isFile())
+    throw new Error('invalid current release');
+} catch {
+  process.exitCode = 1;
+}
+NODE
+}
+alive() {
+  node --input-type=module - "$run/supervisor.pid" <<'NODE'
+import fs from 'node:fs';
+try {
+  const pid = fs.readFileSync(process.argv[2], 'utf8').trim();
+  if (!/^[1-9]\d*$/.test(pid)) throw new Error('invalid pid');
+  const base = '/proc/' + pid;
+  const stat = fs.readFileSync(base + '/stat', 'utf8');
+  if (stat.slice(stat.lastIndexOf(')') + 2).split(' ')[0] === 'Z') throw new Error('exited');
+  if (fs.statSync(base).uid !== process.getuid()) throw new Error('foreign uid');
+  const args = fs.readFileSync(base + '/cmdline', 'utf8').split('\0');
+  const index = args.findIndex(arg => arg === '/etc/rc.d/rc.unraid-deck-bridge' ||
+    arg === '/usr/local/etc/rc.d/rc.unraid-deck-bridge');
+  if (index < 0 || args[index + 1] !== 'supervise') throw new Error('foreign process');
+} catch { process.exitCode = 1; }
+NODE
+}
+case "${1:-status}" in
+  start)
+    registered || {
+      echo 'Bridge start refused: native registration or current release missing' >&2
+      exit 1
+    }
+    if alive; then exit 0; fi
+    # Drain owned instances even if their PID file was lost.
+    bash "$runtime/remove.sh" --stop-only || exit 1
+    registered || exit 1
+    mkdir -p "$run"
+    chmod 700 "$run"
+    nohup /bin/bash /etc/rc.d/rc.unraid-deck-bridge supervise >>"$log" 2>&1 </dev/null 9>&- &
+    echo "$!" >"$run/supervisor.pid"
+    ;;
+  stop)
+    [ -f "$runtime/remove.sh" ] || {
+      echo 'Bridge stop failed: current removal entry is unavailable; use standalone recovery' >&2
+      exit 1
+    }
+    bash "$runtime/remove.sh" --stop-only
+    ;;
+  status) if alive; then echo running; else echo stopped; fi ;;
+  supervise)
+    exec 9>&-
+    registered || {
+      echo 'Bridge supervisor refused: native registration or current release missing' >&2
+      exit 1
+    }
+    exec 8>"$run/supervisor.lock"
+    flock -n 8 || exit 0
+    child=''
+    stopping=0
+    shutdown() {
+      stopping=1
+      [ -z "$child" ] || kill -TERM "$child" 2>/dev/null
+      [ -z "$child" ] || wait "$child"
+      exit 0
+    }
+    trap shutdown TERM INT
+    crashes=0
+    repairs=0
+    ticks=0
+    launch_core() {
+      registered || return 1
+      local template_profile
+      template_profile=$(node "$runtime/manager.mjs" template-profile 2>/dev/null) || template_profile=''
+      case "$template_profile" in DOCKERMAN_CLASSIC_NETWORK | DOCKERMAN_ENDPOINT_NETWORK) ;; *) template_profile='' ;; esac
+      "$runtime/deck-bridge-core" --socket "$run/core.sock" --state /boot/config/plugins/unraid-deck-bridge/state/operations --template-profile "$template_profile" 9>&- &
+      child=$!
+    }
+    launch_core || shutdown
+    while [ "$stopping" = 0 ]; do
+      sleep 5
+      registered || shutdown
+      if ! kill -0 "$child" 2>/dev/null; then
+        wait "$child" || true
+        crashes=$((crashes + 1))
+        if [ "$crashes" -gt 5 ]; then
+          echo 'Core restart limit reached'
+          exit 1
+        fi
+        sleep $((crashes * 5))
+        launch_core || shutdown
+      fi
+      ticks=$((ticks + 1))
+      if [ $((ticks % 3)) = 0 ]; then
+        if node "$runtime/manager.mjs" check >/dev/null 2>&1; then
+          repairs=0
+        elif [ "$repairs" -lt 3 ] && node "$runtime/post-install.mjs" repair-allowed; then
+          echo "API registration recovery attempt $((repairs + 1))"
+          bash "$runtime/repair.sh" 9>&-
+          result=$?
+          if [ "$result" = 0 ]; then
+            repairs=0
+          elif [ "$result" != 75 ]; then
+            repairs=$((repairs + 1))
+            echo 'API registration recovery failed'
+          fi
+        fi
+      fi
+      if [ -f "$log" ] && [ "$(stat -c %s "$log")" -gt 1048576 ]; then
+        tail -c 262144 "$log" >"$log.trim"
+        cat "$log.trim" >"$log"
+        rm -f "$log.trim"
+      fi
+    done
+    ;;
+  *)
+    echo 'Usage: rc.unraid-deck-bridge start|stop|status'
+    exit 1
+    ;;
+esac

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommunityApplications>
+  <Profile>Unraid Deck plugins by mccray. This repository provides Unraid Deck Bridge, which extends the official Unraid API with management features for the Unraid Deck iOS app.</Profile>
+  <Icon>https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/assets/unraid-deck-bridge.png</Icon>
+  <WebPage>https://github.com/mccray-s/unraid-deck-bridge</WebPage>
+</CommunityApplications>

@@ -1,0 +1,34 @@
+# Dependencies and generated output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local artifacts and release outputs
+.cache/
+.local/
+/core-bin/
+/releases/
+/*.tar.gz
+/SHA256SUMS
+*.log
+
+# Local credentials
+.env
+.env.*
+!.env.example
+
+# OS and editor state
+.DS_Store
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local agent instructions
+AGENTS.md
+workspace/
+.agents/
+.omp/
