@@ -462,7 +462,7 @@ async function schedule(args) {
   if (args.length !== 4) throw new Error('SCHEDULE_ARGUMENTS');
   const [candidate, backup, previous, version] = args;
   if (
-    !/^\d{4}\.\d{2}\.\d{2}\.\d{4}$/.test(version) ||
+    !/^\d{4}\.\d{2}\.\d{2}$/.test(version) ||
     fs.realpathSync(candidate) !== candidate ||
     path.dirname(candidate) !== path.join(RUNTIME, 'releases') ||
     !currentMatches(previous) ||

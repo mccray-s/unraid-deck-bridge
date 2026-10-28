@@ -100,7 +100,7 @@ function snapshot(dir, version, native, metadata = 'capture.json') {
   return info;
 }
 function capture(args) {
-  if (args.length !== 1 || !/^\d{4}\.\d{2}\.\d{2}\.\d{4}$/.test(args[0]))
+  if (args.length !== 1 || !/^\d{4}\.\d{2}\.\d{2}$/.test(args[0]))
     throw new Error('CAPTURE_ARGUMENTS');
   if (process.getuid() !== 0) throw new Error('SNAPSHOT_OWNER');
   const version = args[0];

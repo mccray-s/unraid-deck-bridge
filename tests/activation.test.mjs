@@ -65,7 +65,7 @@ for (const guard of [
     if (guard === 'wrong version')
       fs.writeFileSync(
         path.join(f.root, 'boot/plugins/unraid-deck-bridge.plg'),
-        '<PLUGIN name="unraid-deck-bridge" version="2020.01.01.0001"/>',
+        '<PLUGIN name="unraid-deck-bridge" version="2020.01.01"/>',
       );
     if (guard === 'wrong target') {
       const registered = path.join(

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Unraid Deck Bridge local API",
-    "version": "0.6.0"
+    "version": "0.1.0"
   },
   "servers": [
     {
@@ -1560,7 +1560,7 @@
         "type":"object","additionalProperties":false,"required":["operationId","coreVersion"],
         "properties":{
           "operationId":{"type":"string","pattern":"^[a-f0-9]{32}$"},
-          "coreVersion":{"type":"string","enum":["0.6.0"],"description":"Adapter-supplied protocol version required for cancellation; not GraphQL user input."}
+          "coreVersion":{"type":"string","pattern":"^[0-9]+\\.[0-9]+\\.[0-9]+$","description":"Adapter-supplied component version; must match the running service. Not GraphQL user input."}
         }
       },
       "Submit": {

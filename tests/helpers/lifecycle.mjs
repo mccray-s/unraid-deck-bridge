@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import { repo, sha256, write } from './release.mjs';
 
 export const build = '0.6.0-123456abcdef';
-export const pluginVersion = '2026.10.27.0001';
+export const pluginVersion = '2026.10.27';
 export function rewriteHostPaths(source, root) {
   const replacements = {
     '/boot/config/plugins': path.join(root, 'boot/plugins'),

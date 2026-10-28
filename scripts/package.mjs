@@ -139,9 +139,9 @@ const packagingFiles = [
   'remove.sh',
 ];
 function validatePluginVersion(value) {
-  if (!matches(/^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]{4}$/, value))
-    throw new Error('Plugin version must be YYYY.MM.DD.NNNN');
-  const [year, month, day, sequence] = value.split('.').map(Number);
+  if (!matches(/^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$/, value))
+    throw new Error('Plugin version must be YYYY.MM.DD');
+  const [year, month, day] = value.split('.').map(Number);
   const date = new Date(0);
   date.setUTCFullYear(year, month - 1, day);
   if (
@@ -151,8 +151,6 @@ function validatePluginVersion(value) {
     date.getUTCDate() !== day
   )
     throw new Error('Plugin version requires a valid date');
-  if (sequence < 1 || sequence > 9999)
-    throw new Error('Plugin version sequence must be 0001–9999');
   return value;
 }
 async function buildArchive(coreInput, pkg) {
@@ -286,12 +284,7 @@ function buildPlugin(
     parent.appendChild(child);
     return child;
   }
-  element(
-    plugin,
-    'CHANGES',
-    {},
-    `${version}: Reduce installer size while retaining offline cleanup and safe activation.`,
-  );
+  element(plugin, 'CHANGES', {}, `${version}: Initial release.`);
   const preflight = element(plugin, 'FILE', { Run: '/bin/bash' });
   element(
     preflight,
@@ -483,7 +476,7 @@ Options:
                             must be in the same directory.
                             Default: core-bin/linux-amd64/deck-bridge-core
                             relative to the repository root.
-  --plugin-version VERSION  Plugin version (YYYY.MM.DD.NNNN).
+  --plugin-version VERSION  Plugin version (YYYY.MM.DD).
                             Default: package.json bridge.pluginVersion.
   --repository OWNER/REPO    Public GitHub repository; enables static PLG output.
                             Default: archive only, without writing a PLG.

@@ -169,7 +169,7 @@ function fixture(t, mode = 'success', options = {}) {
     hook,
     options,
     mode,
-    version: options.version || '2026.10.27.0001',
+    version: options.version || '2026.10.27',
   };
   const incomingBytes =
     options.xml ||
@@ -235,7 +235,7 @@ if (!['unregistered', 'unchanged', 'failed', 'delayed'].includes(c.mode)) {
  fs.mkdirSync(c.persisted.slice(0, c.persisted.lastIndexOf('/')), {recursive:true});
  fs.mkdirSync(c.registered.slice(0, c.registered.lastIndexOf('/')), {recursive:true});
  if (c.mode !== 'same-version' && !c.options.deleteIncoming && !c.options.deleteAtRelease)
-  fs.writeFileSync(c.persisted, c.mode === 'version' ? '<PLUGIN name="unraid-deck-bridge" version="2026.10.26.0001"></PLUGIN>' : fs.readFileSync(c.incoming));
+  fs.writeFileSync(c.persisted, c.mode === 'version' ? '<PLUGIN name="unraid-deck-bridge" version="2026.10.26"></PLUGIN>' : fs.readFileSync(c.incoming));
  try { fs.unlinkSync(c.registered); } catch {}
  fs.symlinkSync(c.options.wrongTarget ? c.root + '/other.plg' : c.persisted, c.registered);
 }
@@ -586,7 +586,7 @@ test(
     const before = fs.readdirSync(f.run);
     const result = spawnSync(
       process.execPath,
-      [f.controller, 'schedule', f.candidate, f.backup, '', '2026.10.27.0001'],
+      [f.controller, 'schedule', f.candidate, f.backup, '', '2026.10.27'],
       { encoding: 'utf8' },
     );
     assert.notEqual(result.status, 0);
@@ -857,13 +857,27 @@ test(
 
 for (const options of [
   { missingSource: true },
-  { sourceVersion: '2026.10.26.0001' },
+  { sourceVersion: '2026.10.26' },
 ])
   test(
     `capture rejects ${options.missingSource ? 'missing incoming PLG' : 'wrong incoming version'} before schedule`,
     { skip: !linux },
     async (t) => {
       const f = fixture(t, 'success', options);
+      assert.notEqual(await f.captured(), '0');
+      assert.equal(fs.existsSync(path.join(f.run, 'activation-job')), false);
+      assert.equal(fs.existsSync(f.hook), false);
+      assert.equal(fs.existsSync(f.persisted), false);
+      f.assertPrepared();
+    },
+  );
+
+for (const version of ['2026.10.27.0001', '2026.10.27beta'])
+  test(
+    `capture rejects invalid plugin version ${version} before schedule`,
+    { skip: !linux },
+    async (t) => {
+      const f = fixture(t, 'success', { version });
       assert.notEqual(await f.captured(), '0');
       assert.equal(fs.existsSync(path.join(f.run, 'activation-job')), false);
       assert.equal(fs.existsSync(f.hook), false);
@@ -909,7 +923,7 @@ for (const change of [
       if (change === 'version') {
         const file = path.join(dir, 'snapshot.json');
         const info = JSON.parse(fs.readFileSync(file, 'utf8'));
-        info.version = '2026.10.26.0001';
+        info.version = '2026.10.26';
         write(file, JSON.stringify(info));
       }
       if (change === 'selection')
@@ -943,7 +957,7 @@ for (const kind of ['different-version', 'symlink', 'directory'])
       fs.mkdirSync(path.dirname(f.persisted), { recursive: true });
       const bytes =
         kind === 'different-version'
-          ? '<PLUGIN name="unraid-deck-bridge" version="2026.10.26.0001"></PLUGIN>'
+          ? '<PLUGIN name="unraid-deck-bridge" version="2026.10.26"></PLUGIN>'
           : f.incomingBytes + '<!-- concurrent writer -->';
       const other = path.join(f.root, 'other.plg');
       if (kind === 'directory') fs.mkdirSync(f.persisted);

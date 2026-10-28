@@ -54,7 +54,7 @@ function realDirectory(file, parent) {
 if (!realDirectory(candidate, runtime + '/releases') ||
     !realDirectory(backup, base + '/backups') ||
     (previous && !realDirectory(previous, runtime + '/releases')) ||
-    !/^\d{4}\.\d{2}\.\d{2}\.\d{4}$/.test(version) || !currentMatches ||
+    !/^\d{4}\.\d{2}\.\d{2}$/.test(version) || !currentMatches ||
     !fs.lstatSync(registered).isSymbolicLink() ||
     fs.realpathSync(registered) !== persisted ||
     !fs.lstatSync(persisted).isFile()) throw new Error('Stale or unregistered Bridge activation');

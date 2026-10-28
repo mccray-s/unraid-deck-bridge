@@ -9,6 +9,11 @@ import { promisify } from 'node:util';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
+const packageVersion = JSON.parse(
+  fs.readFileSync(path.join(root, 'package.json'), 'utf8'),
+).version;
+const nextVersion = (version) =>
+  version.replace(/\d+$/, (patch) => String(BigInt(patch) + 1n));
 
 function fixture(t, metadata) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-version-'));
@@ -39,6 +44,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 const [entry, dir, expected] = process.argv.slice(1);
+const differentVersion = expected.replace(/\d+$/, (patch) => String(BigInt(patch) + 1n));
 const api = await import(entry);
 // Metadata is a module-load snapshot, not filesystem IO on each request.
 fs.writeFileSync(new URL('./package.json', entry), JSON.stringify({ type: 'module', version: '8.8.8' }));
@@ -86,7 +92,7 @@ try {
   assert.equal(info.compatible, true);
   assert.ok(info.capabilities.includes('system.read'));
   for (const write of writes) assert.equal((await write()).accepted, true);
-  coreVersion = expected === '0.6.0' ? '0.7.1' : '0.6.0';
+  coreVersion = differentVersion;
   const mismatch = await service.info(context);
   assert.equal(mismatch.version, expected);
   assert.equal(mismatch.compatible, false);
@@ -106,7 +112,7 @@ try {
     const result = await service.cancel(context, operationId, action);
     assert.equal(result.status, 'CANCELLED');
     assert.deepEqual(requests, [{ path: '/docker/cancel/' + action, input: { operationId, coreVersion: expected } }]);
-    coreVersion = expected === '0.6.0' ? '0.7.1' : '0.6.0';
+    coreVersion = differentVersion;
     requests.length = 0;
     await assert.rejects(() => service.cancel(context, operationId, action), (error) => error.extensions.code === 'CORE_VERSION_MISMATCH');
     assert.equal(requests.length, 1);
@@ -122,7 +128,7 @@ try {
 }
 `;
 
-for (const version of ['0.6.0', '0.7.1']) {
+for (const version of [packageVersion, nextVersion(packageVersion)]) {
   test(`adapter metadata ${version} controls info, strict domain matching and cancellation`, async (t) => {
     const { dir, entry } = fixture(
       t,

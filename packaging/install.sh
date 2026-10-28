@@ -9,7 +9,7 @@ runtime=/usr/local/emhttp/plugins/unraid-deck-bridge
 staging="$1"
 build="$2"
 plugin_version="$3"
-[[ "$plugin_version" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]{4}$ ]] || {
+[[ "$plugin_version" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]] || {
   echo 'Invalid Bridge plugin version' >&2
   exit 1
 }

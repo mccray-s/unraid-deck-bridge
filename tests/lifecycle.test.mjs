@@ -234,6 +234,14 @@ const invalidInstallations = {
   ],
   'legacy two arguments': (f) => f.args.slice(0, 3),
   'invalid plugin version': (f) => [...f.args.slice(0, 3), 'bad'],
+  'four-segment plugin version': (f) => [
+    ...f.args.slice(0, 3),
+    `${pluginVersion}.0001`,
+  ],
+  'plugin version with suffix': (f) => [
+    ...f.args.slice(0, 3),
+    `${pluginVersion}beta`,
+  ],
   'non-staging directory': (f) => {
     const target = path.join(f.runtime, 'releases/ordinary');
     fs.renameSync(f.stage, target);

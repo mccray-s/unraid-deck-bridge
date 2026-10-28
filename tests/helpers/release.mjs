@@ -58,7 +58,7 @@ export function releaseFixture(t) {
       type: 'module',
       license: 'GPL-2.0-or-later',
       version: '0.6.0',
-      bridge: { pluginVersion: '2026.10.26.0001' },
+      bridge: { pluginVersion: '2026.10.26' },
     }),
   );
   write(

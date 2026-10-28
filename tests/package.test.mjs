@@ -165,7 +165,7 @@ test('archive has only authenticated release members and deterministic metadata'
   assert.equal(release.plugin, null);
   assert.equal(
     path.basename(release.archive),
-    'unraid-deck-bridge-2026.10.26.0001-linux-amd64.tar.gz',
+    'unraid-deck-bridge-2026.10.26-linux-amd64.tar.gz',
   );
   assert.equal(sha256(fs.readFileSync(release.archive)), release.sha256);
   assert.equal(release.build, '0.6.0-' + release.sha256.slice(0, 12));
@@ -461,14 +461,15 @@ test('default Core path works and archive-only build preserves an existing root 
 for (const version of [
   '',
   '2026.10.24b58',
-  '2026.02.30.0001',
-  '2026.02.29.0001',
-  '1900.02.29.0001',
-  '2100.02.29.0001',
+  '2026.02.30',
+  '2026.02.29',
+  '1900.02.29',
+  '2100.02.29',
+  '2026.10.26.0001',
   '2026.10.26.0000',
   '2026.10.26.10000',
-  '2026.1.26.0001',
-  '../2026.10.26.0001',
+  '2026.1.26',
+  '../2026.10.26',
 ]) {
   test(`invalid plugin version ${JSON.stringify(version)} leaves no output`, (t) => {
     const f = releaseFixture(t);
@@ -477,7 +478,7 @@ for (const version of [
   });
 }
 
-for (const version of ['2000.02.29.0001', '2024.02.29.9999']) {
+for (const version of ['2000.02.29', '2024.02.29']) {
   test(`valid leap-day plugin version ${version} is preserved`, (t) => {
     const f = releaseFixture(t);
     const result = f.run(
@@ -534,7 +535,7 @@ test('online PLG binds a fixed release archive and a separate canonical update U
   const release = JSON.parse(r.stdout);
   assert.equal(release.plugin, path.join(f.root, 'unraid-deck-bridge.plg'));
   const p = parsePlugin(release.plugin);
-  assert.equal(p.attributes.version, '2026.10.26.0001');
+  assert.equal(p.attributes.version, '2026.10.26');
   assert.equal(p.attributes.min, '6.12.0');
   assert.equal(p.attributes.max, undefined);
   assert.equal(
@@ -550,7 +551,7 @@ test('online PLG binds a fixed release archive and a separate canonical update U
   assert.equal(p.files[1].SHA256, sha256(fs.readFileSync(release.archive)));
   assert.equal(
     p.files[1].URL,
-    `https://github.com/test-owner/test.repo/releases/download/v2026.10.26.0001/${path.basename(release.archive)}`,
+    `https://github.com/test-owner/test.repo/releases/download/v2026.10.26/${path.basename(release.archive)}`,
   );
   assert.deepEqual(p.files[2].attributes, { Run: '/bin/bash' });
   assert.deepEqual(p.files[3].attributes, {
@@ -576,7 +577,12 @@ test('online PLG binds a fixed release archive and a separate canonical update U
 
 test('PLG release progression rejects old versions and changed same-version archives without publishing outputs', (t) => {
   const f = releaseFixture(t);
-  assert.equal(f.run('--repository', 'test/repo').status, 0);
+  const initial = f.run('--repository', 'test/repo');
+  assert.equal(initial.status, 0, initial.stderr);
+  const release = JSON.parse(initial.stdout);
+  const originalArchive = fs.readFileSync(release.archive);
+  const sums = path.join(f.root, 'out/SHA256SUMS');
+  const originalSums = fs.readFileSync(sums);
   const file = path.join(f.root, 'unraid-deck-bridge.plg');
   const original = fs.readFileSync(file);
   const other = path.join(f.root, 'other');
@@ -589,31 +595,36 @@ test('PLG release progression rejects old versions and changed same-version arch
       '--repository',
       'test/repo',
       '--plugin-version',
-      '2026.10.25.9999',
+      '2026.10.25',
       '--out',
       other,
     ).status,
     0,
   );
   assert.ok(!fs.existsSync(other));
+  assert.deepEqual(fs.readFileSync(file), original);
+  assert.deepEqual(fs.readFileSync(release.archive), originalArchive);
+  assert.deepEqual(fs.readFileSync(sums), originalSums);
   assert.equal(
     f.run(
       '--repository',
       'test/repo',
       '--plugin-version',
-      '2026.10.26.0002',
+      '2026.10.27',
       '--out',
       other,
     ).status,
     0,
   );
-  assert.equal(parsePlugin(file).attributes.version, '2026.10.26.0002');
+  assert.equal(parsePlugin(file).attributes.version, '2026.10.27');
+  assert.deepEqual(fs.readFileSync(release.archive), originalArchive);
+  assert.deepEqual(fs.readFileSync(sums), originalSums);
 });
 
 for (const existing of [
   'broken <XML',
   '<PLUGIN/>',
-  '<PLUGIN name=\"unraid-deck-bridge\" version=\"2026.10.25.0001\"/>',
+  '<PLUGIN name=\"unraid-deck-bridge\" version=\"2026.10.25\"/>',
 ]) {
   test('unrecognized existing PLG is not overwritten', (t) => {
     const f = releaseFixture(t);
@@ -630,10 +641,7 @@ for (const replacement of [
   (xml) => xml.replace('<PLUGIN ', '<PLUGIN duplicate="one" duplicate="two" '),
   (xml) => xml.replace('name="unraid-deck-bridge"', 'name=unraid-deck-bridge'),
   (xml) =>
-    xml.replace(
-      'version="2026.10.26.0001"',
-      'version="2026.10.26.0001 &unknown;"',
-    ),
+    xml.replace('version="2026.10.26"', 'version="2026.10.26 &unknown;"'),
   (xml) => `<!DOCTYPE PLUGIN [<!ENTITY injected "value">]>\n${xml}`,
   (xml) => `<!DOCTYPE PLUGIN SYSTEM "file:///never-read-this-fixture">\n${xml}`,
 ]) {

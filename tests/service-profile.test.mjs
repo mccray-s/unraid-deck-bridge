@@ -72,10 +72,7 @@ function supervisorFixture(t) {
   const registered = path.join(root, 'log/plugins/unraid-deck-bridge.plg');
   fs.mkdirSync(release, { recursive: true });
   fs.symlinkSync(release, path.join(root, 'runtime/current'));
-  write(
-    persisted,
-    '<PLUGIN name="unraid-deck-bridge" version="2026.10.27.0001"/>',
-  );
+  write(persisted, '<PLUGIN name="unraid-deck-bridge" version="2026.10.27"/>');
   fs.mkdirSync(path.dirname(registered), { recursive: true });
   fs.symlinkSync(persisted, registered);
   write(
