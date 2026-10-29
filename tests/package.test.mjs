@@ -200,6 +200,8 @@ test('archive has only authenticated release members and deterministic metadata'
     'post-install.mjs',
     'plg-capture.mjs',
     'activate.sh',
+    'api-runtime.mjs',
+    'lifecycle-log.mjs',
     'manager.mjs',
     'rc.unraid-deck-bridge',
     'health.sh',

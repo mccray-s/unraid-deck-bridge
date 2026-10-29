@@ -125,9 +125,11 @@ case "${1:-status}" in
       fi
       ticks=$((ticks + 1))
       if [ $((ticks % 3)) = 0 ]; then
-        if node "$runtime/manager.mjs" check >/dev/null 2>&1; then
+        loaded=0
+        node "$runtime/api-runtime.mjs" loaded >/dev/null 2>&1 || loaded=$?
+        if [ "$loaded" = 0 ] && node "$runtime/manager.mjs" check >/dev/null 2>&1; then
           repairs=0
-        elif [ "$repairs" -lt 3 ] && node "$runtime/post-install.mjs" repair-allowed; then
+        elif { [ "$loaded" = 0 ] || [ "$loaded" = 10 ]; } && [ "$repairs" -lt 3 ] && node "$runtime/post-install.mjs" repair-allowed; then
           echo "API registration recovery attempt $((repairs + 1))"
           bash "$runtime/repair.sh" 9>&-
           result=$?

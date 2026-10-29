@@ -11,6 +11,8 @@ import {
   captureDirectory,
   snapshot,
 } from './plg-capture.mjs';
+import { inspectRuntime, waitForApi } from './api-runtime.mjs';
+import { logLifecycle } from './lifecycle-log.mjs';
 
 const RUN = '/var/run/unraid-deck-bridge';
 const RUNTIME = '/usr/local/emhttp/plugins/unraid-deck-bridge';
@@ -24,6 +26,7 @@ const DETACH_MS = 10000;
 const NATIVE_MS = 300000;
 const COMMIT_MS = 10000;
 const LOCK_MS = 30000;
+const API_STARTUP_MS = 300000;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const exists = (p) => fs.existsSync(p);
 
@@ -292,6 +295,12 @@ function repairAllowed() {
 }
 function status(job, state, phase, code = null) {
   if (!owned(job)) return false;
+  let previous;
+  try {
+    previous = JSON.parse(
+      fs.readFileSync(path.join(job.dir, 'status.json'), 'utf8'),
+    );
+  } catch {}
   const temp = path.join(job.dir, `status-${process.pid}-${randomUUID()}.tmp`);
   try {
     fs.writeFileSync(
@@ -304,6 +313,12 @@ function status(job, state, phase, code = null) {
       return false;
     }
     fs.renameSync(temp, path.join(job.dir, 'status.json'));
+    if (
+      previous?.state !== state ||
+      previous?.phase !== phase ||
+      previous?.code !== code
+    )
+      logLifecycle('job-status', { job: job.token, state, phase, code });
     return true;
   } catch {
     try {
@@ -330,6 +345,18 @@ function readJob(dir) {
   return job;
 }
 async function worker(job) {
+  try {
+    return await runWorker(job);
+  } finally {
+    if (!owned(job))
+      logLifecycle('job-cancelled', {
+        job: job.token,
+        phase: 'ownership',
+        code: 'JOB_CANCELLED',
+      });
+  }
+}
+async function runWorker(job) {
   let deadline = Date.now() + DETACH_MS;
   while (process.ppid !== 1) {
     if (!selected(job)) return;
@@ -395,9 +422,72 @@ async function worker(job) {
     JSON.stringify({ fingerprint: job.confirmed }),
     { mode: 0o600, flag: 'wx' },
   );
-  if (!status(job, 'PENDING', 'activation-lock')) return;
-  deadline = Date.now() + LOCK_MS;
+  let lockDeadline = null;
+  const startupDeadline = Date.now() + API_STARTUP_MS;
+  let waitReason;
+  let waitStarted = false;
+  let stableResult;
+  async function startup() {
+    if (!status(job, 'PENDING', 'api-startup')) return false;
+    if (!waitStarted) {
+      waitStarted = true;
+      logLifecycle('api-wait-begin', { job: job.token, phase: 'api-startup' });
+    }
+    try {
+      if (Date.now() >= startupDeadline)
+        throw Object.assign(new Error(), { code: 'API_STARTUP_TIMEOUT' });
+      const ready = await waitForApi({
+        valid: () =>
+          selected(job) &&
+          validLock(job) &&
+          currentMatches(job.previous) &&
+          !committed(job),
+        timeoutMs: Math.max(1, startupDeadline - Date.now()),
+        onWait: (code) => {
+          if (code === waitReason) return;
+          waitReason = code;
+          logLifecycle('api-wait-reason', {
+            job: job.token,
+            phase: 'api-startup',
+            code,
+          });
+        },
+      });
+      const stable = JSON.stringify([ready?.code, ready?.identity]);
+      if (stable !== stableResult) {
+        stableResult = stable;
+        logLifecycle('api-wait-ready', {
+          job: job.token,
+          code: ready?.code,
+          identity: ready?.identity,
+          expectedVersion: ready?.expectedVersion,
+          loadedVersion: ready?.loadedVersion,
+          coreOnline: ready?.coreOnline,
+          compatible: ready?.compatible,
+        });
+      }
+      return true;
+    } catch (error) {
+      if (!selected(job)) return false;
+      const stale =
+        !validLock(job) || !currentMatches(job.previous) || committed(job);
+      status(
+        job,
+        stale ? 'SUPERSEDED' : 'FAILED',
+        'api-startup',
+        stale
+          ? 'STALE_ACTIVATION'
+          : error.code === 'API_STARTUP_TIMEOUT'
+            ? 'API_STARTUP_TIMEOUT'
+            : 'JOB_CANCELLED',
+      );
+      return false;
+    }
+  }
+  if (!(await startup())) return;
   while (selected(job)) {
+    if (!status(job, 'PENDING', 'activation-lock')) return;
+    lockDeadline ??= Date.now() + LOCK_MS;
     if (!currentMatches(job.previous))
       return status(job, 'SUPERSEDED', 'activation-lock', 'STALE_CURRENT');
     if (!validLock(job))
@@ -426,7 +516,7 @@ async function worker(job) {
       '/bin/bash',
       [
         '-c',
-        'flock -n -E 75 9 || exit $?; exec "$@"',
+        'flock -n -E 74 9 || exit 74; exec "$@"',
         'bridge-activation',
         process.execPath,
         SELF,
@@ -443,11 +533,16 @@ async function worker(job) {
       child.once('exit', (code) => resolve(code));
     });
     if (!selected(job)) return;
-    if (result === 75 && Date.now() < deadline) {
+    if (result === 75) {
+      lockDeadline = null;
+      if (!(await startup())) return;
+      continue;
+    }
+    if (result === 74 && Date.now() < lockDeadline) {
       await sleep(POLL_MS);
       continue;
     }
-    if (result === 75)
+    if (result === 74)
       return status(job, 'FAILED', 'activation-lock', 'LOCK_TIMEOUT');
     if (result === 76) return;
     return status(
@@ -643,6 +738,19 @@ async function main() {
             : null;
     if (reason) {
       status(job, 'SUPERSEDED', 'activation', reason);
+      process.exitCode = 76;
+      return;
+    }
+    if (!(await inspectRuntime()).ready) {
+      process.exitCode = 75;
+      return;
+    }
+    if (
+      !selected(job) ||
+      !validLock(job, 9) ||
+      !currentMatches(job.previous) ||
+      committed(job)
+    ) {
       process.exitCode = 76;
       return;
     }

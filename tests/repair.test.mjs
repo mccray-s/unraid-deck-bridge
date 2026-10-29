@@ -31,7 +31,7 @@ function fixture(t, state) {
   write(
     path.join(f.candidate, 'manager.mjs'),
     `import fs from 'node:fs';
-if (process.argv[2] === 'check') process.exit(1);
+if (process.argv[2] === 'check') process.exit(process.env.DISK_CURRENT === '1' ? 0 : 1);
 if (process.argv[2] === 'register') {
   if (fs.readFileSync(process.env.API_STATE, 'utf8') !== 'stopped\\n') process.exit(2);
   fs.writeFileSync(process.env.MODULE_FILE, 'repaired\\n');
@@ -134,3 +134,45 @@ for (const invalid of [
       assert.equal(fs.existsSync(lifecycleRun), false);
   });
 }
+
+test('ready loaded runtime with Core offline requires no API repair', (t) => {
+  const { f, run } = fixture(t, 'READY');
+  write(f.coreState, 'stopped\n');
+  const result = run({ DISK_CURRENT: '1' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(fs.readFileSync(f.apiState, 'utf8'), 'running\n');
+  assert.equal(fs.readFileSync(f.moduleFile, 'utf8'), 'official-old\n');
+  assert.deepEqual(f.events(), []);
+});
+
+test('unknown runtime defers repair without touching API', (t) => {
+  const { f, run } = fixture(t, 'READY');
+  const result = run({ RUNTIME_UNKNOWN: '1' });
+  assert.equal(result.status, 75, result.stdout + result.stderr);
+  assert.equal(fs.readFileSync(f.apiState, 'utf8'), 'running\n');
+  assert.equal(fs.readFileSync(f.moduleFile, 'utf8'), 'official-old\n');
+  assert.deepEqual(f.events(), []);
+});
+
+test('failed runtime reload is a repair failure rather than an unlimited startup deferral', (t) => {
+  const { f, run } = fixture(t, 'READY');
+  const result = run({
+    DISK_CURRENT: '1',
+    RUNTIME_MISSING: '1',
+    FAIL_RELOAD: '1',
+  });
+  assert.equal(result.status, 1, result.stdout + result.stderr);
+  assert.equal(fs.readFileSync(f.moduleFile, 'utf8'), 'official-old\n');
+  assert.equal(f.events().filter((event) => event === 'api stop').length, 1);
+  assert.equal(f.events().filter((event) => event === 'api start').length, 1);
+});
+
+test('missing loaded runtime reloads once while preserving correct registration', (t) => {
+  const { f, run } = fixture(t, 'READY');
+  const result = run({ DISK_CURRENT: '1', RUNTIME_MISSING: '1' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(fs.readFileSync(f.moduleFile, 'utf8'), 'official-old\n');
+  assert.equal(f.events().filter((event) => event === 'api stop').length, 1);
+  assert.equal(f.events().filter((event) => event === 'api start').length, 1);
+  assert.ok(!f.events().some((event) => event.includes('plugins install')));
+});

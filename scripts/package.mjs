@@ -132,6 +132,8 @@ const packagingFiles = [
   'plg-capture.mjs',
   'post-install.mjs',
   'activate.sh',
+  'api-runtime.mjs',
+  'lifecycle-log.mjs',
   'manager.mjs',
   'rc.unraid-deck-bridge',
   'health.sh',
@@ -284,7 +286,12 @@ function buildPlugin(
     parent.appendChild(child);
     return child;
   }
-  element(plugin, 'CHANGES', {}, `${version}: Initial release.`);
+  element(
+    plugin,
+    'CHANGES',
+    {},
+    `${version}: Wait for API startup, reload only when needed, and retain lifecycle diagnostics across reboots.`,
+  );
   const preflight = element(plugin, 'FILE', { Run: '/bin/bash' });
   element(
     preflight,

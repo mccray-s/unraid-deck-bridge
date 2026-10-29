@@ -119,6 +119,24 @@ export function lifecycle(t, { previous = false, fail = '' } = {}) {
     '// isolated external scheduling boundary\n',
   );
   write(
+    path.join(stage, 'lifecycle-log.mjs'),
+    'export function logLifecycle() { return true; }\n',
+  );
+  write(
+    path.join(stage, 'api-runtime.mjs'),
+    `
+import fs from 'node:fs';
+export async function inspectRuntime() {
+  return { ready: process.env.RUNTIME_UNKNOWN !== '1', adapter: 'current' };
+}
+export async function waitForApi() {}
+if (process.env.RUNTIME_UNKNOWN === '1') process.exitCode = 75;
+if (['loaded', 'decision'].includes(process.argv[2]) && process.env.RUNTIME_MISSING === '1' &&
+    (process.env.FAIL_RELOAD === '1' ||
+     fs.readFileSync(process.env.API_STATE, 'utf8') !== 'reloaded\\n')) process.exitCode = 10;
+`,
+  );
+  write(
     path.join(stage, 'plg-capture.mjs'),
     rewrite(
       fs.readFileSync(path.join(repo, 'packaging/plg-capture.mjs'), 'utf8'),
@@ -210,6 +228,17 @@ if [ "$1" = -e ] && [ "$REAL_HEALTH_NODE" = 1 ]; then exec "$REAL_NODE" "$@"; fi
 if [ "$1" = -e ]; then [ "$TEST_NODE_ARCH" = x64 ]; exit $?; fi
 if [ "$1" = --input-type=module ]; then echo import >> "$EVENTS"; [ "$FAIL_AT" != import ]; exit $?; fi
 if [ "$2" = schedule ]; then echo schedule >> "$EVENTS"; [ "$FAIL_AT" != schedule ]; exit $?; fi
+if [ "\${1##*/}" = api-runtime.mjs ] && [ "$REAL_HEALTH_NODE" = 1 ] && { [ "$2" = core ] || [ "$2" = health ]; }; then exec "$REAL_NODE" "$@"; fi
+if [ "\${1##*/}" = lifecycle-log.mjs ]; then exit 0; fi
+if [ "\${1##*/}" = api-runtime.mjs ]; then
+  if [ "$2" = ready ]; then [ "$RUNTIME_UNKNOWN" != 1 ]; exit $?; fi
+  if [ "$2" = loaded ] || [ "$2" = decision ]; then
+    [ "$RUNTIME_UNKNOWN" != 1 ] || exit 75
+    [ "$RUNTIME_MISSING" != 1 ] || [ "$(cat "$API_STATE")" = reloaded ] || exit 10
+    exit 0
+  fi
+fi
+if [ "$2" = check ]; then [ "$DISK_CURRENT" = 1 ]; exit $?; fi
 mode="$2"
 echo "manager $mode" >> "$EVENTS"
 [ "$FAIL_AT" != "$mode" ] || exit 8
@@ -234,6 +263,7 @@ if [ "$1" = stop ] && [ -n "$API_FLUSH_VALUE" ]; then printf '%s\\n' "$API_FLUSH
 if [ "$1" = stop ] && [ "$FAIL_AT" = api-stop ]; then exit 9; fi
 if [ "$1" = start ] && [ "$FAIL_AT" = start-once ] && [ ! -e "$START_FAILED" ]; then touch "$START_FAILED"; exit 9; fi
 if [ "$1" = start ]; then printf 'running\\n' > "$API_STATE"; fi
+if [ "$1" = start ] && [ "$RUNTIME_MISSING" = 1 ]; then printf 'reloaded\\n' > "$API_STATE"; fi
 `,
     0o755,
   );
@@ -255,6 +285,9 @@ if [ "$1" = start ]; then printf 'running\\n' > "$API_STATE"; fi
     HOLD_FILE: '',
     API_FLUSH_VALUE: '',
     FAIL_CORE_STOP: '',
+    DISK_CURRENT: '',
+    RUNTIME_UNKNOWN: '',
+    RUNTIME_MISSING: '',
   };
   const sums = (dir = stage) => {
     const files = fs
@@ -364,6 +397,19 @@ exit "$status"
   write(
     path.join(f.stage, 'health.sh'),
     f.rewrite(fs.readFileSync(path.join(repo, 'packaging/health.sh'), 'utf8')),
+  );
+  write(
+    path.join(f.stage, 'api-runtime.mjs'),
+    `
+import fs from 'node:fs';
+import { inspectCore } from ${JSON.stringify(path.join(repo, 'packaging/api-runtime.mjs'))};
+const expectedVersion = JSON.parse(fs.readFileSync(new URL('./adapter/package.json', import.meta.url))).version;
+const result = await inspectCore({
+  coreSocket: ${JSON.stringify(path.join(f.root, 'run/core.sock'))},
+  expectedVersion,
+});
+process.exitCode = result.healthy ? 0 : 1;
+`,
   );
   f.sums();
   const requestsFile = path.join(f.root, 'health-requests.jsonl');

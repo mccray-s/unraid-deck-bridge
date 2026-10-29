@@ -119,7 +119,8 @@ else if (cmd === 'backup') {
 } else if (cmd === 'restore') restore(process.argv[3]);
 else if (cmd === 'check') {
   preflight();
-  const version = adapterVersion(path.join(runtime, 'current'));
+  const source = process.argv[3] || path.join(runtime, 'current');
+  const version = adapterVersion(source);
   const c = read(config),
     p = read(manifest);
   if (
@@ -140,7 +141,7 @@ else if (cmd === 'check') {
     if (
       !fs
         .readFileSync(api + '/node_modules/' + name + '/' + file)
-        .equals(fs.readFileSync(runtime + '/current/adapter/' + file))
+        .equals(fs.readFileSync(path.join(source, 'adapter', file)))
     )
       process.exit(1);
 } else throw new Error('Unknown management action');

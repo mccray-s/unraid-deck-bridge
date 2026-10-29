@@ -63,6 +63,19 @@ const plugin = xml.match(/<PLUGIN\b([^>]*)>/);
 const attrs = Object.fromEntries([...((plugin?.[1] || '').matchAll(/([A-Za-z][\w-]*)\s*=\s*(["'])(.*?)\2/g))].map(m => [m[1], m[3]]));
 if (attrs.name !== 'unraid-deck-bridge' || attrs.version !== version) throw new Error('Persisted Bridge registration does not match activation');
 NODE
+audit() { node "$candidate/lifecycle-log.mjs" "$@" || true; }
+audit activation-start PRIMARY
+# Unknown startup/authentication state never authorizes a restart.
+node "$candidate/api-runtime.mjs" ready || {
+  audit activation-deferred API_NOT_READY
+  exit 75
+}
+loaded=0
+node "$candidate/api-runtime.mjs" decision || loaded=$?
+[ "$loaded" = 0 ] || [ "$loaded" = 10 ] || {
+  audit activation-deferred DETECTION_UNKNOWN
+  exit 75
+}
 api_touched=0
 backup_ready=0
 registration_touched=0
@@ -75,10 +88,12 @@ rollback() {
   trap - EXIT
   trap - TERM INT
   [ "$code" -ne 0 ] || exit 0
+  audit activation-failed FAILED
   echo 'Bridge activation FAILED; native PLG registration remains committed; recovering API and runtime'
   recovery_failed=0
   api_safe=1
   if [ "$registration_touched" = 1 ]; then
+    audit api-stop ROLLBACK
     unraid-api stop 9>&- || {
       api_safe=0
       recovery_failed=1
@@ -90,7 +105,10 @@ rollback() {
   # Do not replace the runtime until its service has drained.
   if [ "$candidate_started" = 1 ] && ! bash "$candidate/remove.sh" --stop-only; then
     echo 'Recovery incomplete: candidate Core did not drain; retaining current, rc and recovery files'
-    if [ "$api_touched" = 1 ]; then unraid-api start 9>&- || true; fi
+    if [ "$api_touched" = 1 ]; then
+      audit api-start ROLLBACK
+      unraid-api start 9>&- || true
+    fi
     exit "$code"
   fi
   if [ "$current_switched" = 1 ]; then
@@ -106,7 +124,10 @@ rollback() {
   if [ "$core_stopped" = 1 ] && [ -n "$previous" ] && [ "$recovery_failed" = 0 ]; then
     "$service" start 9>&- || recovery_failed=1
   fi
-  if [ "$api_touched" = 1 ]; then unraid-api start 9>&- || recovery_failed=1; fi
+  if [ "$api_touched" = 1 ]; then
+    audit api-start ROLLBACK
+    unraid-api start 9>&- || recovery_failed=1
+  fi
   if [ "$recovery_failed" = 1 ]; then echo 'Recovery incomplete: inspect retained backup and services before retrying'; fi
   exit "$code"
 }
@@ -135,16 +156,38 @@ done
   echo 'Bridge Core readiness check failed'
   exit 1
 }
-# Stop before snapshot/registration: shutdown may flush old in-memory config.
-api_touched=1
-unraid-api stop 9>&-
-node "$candidate/manager.mjs" backup "$backup"
-backup_ready=1
-registration_touched=1
-node "$candidate/manager.mjs" register "$candidate"
-node --input-type=module -e "await import('/usr/local/unraid-api/node_modules/unraid-deck-bridge/index.js')"
-unraid-api plugins install unraid-deck-bridge --bundled --no-restart 9>&-
-unraid-api start 9>&-
+# Reinspect after Core startup; Core-only failures never request an API reload.
+loaded=0
+node "$candidate/api-runtime.mjs" decision || loaded=$?
+[ "$loaded" = 0 ] || [ "$loaded" = 10 ] || {
+  audit activation-deferred DETECTION_UNKNOWN
+  exit 75
+}
+disk_current=0
+if node "$candidate/manager.mjs" check "$candidate"; then disk_current=1; fi
+if [ "$disk_current" = 0 ] || [ "$loaded" = 10 ]; then
+  if [ "$disk_current" = 0 ]; then
+    audit api-reload-required DISK_REPAIR_REQUIRED
+  else
+    audit api-reload-required ADAPTER_RELOAD_REQUIRED
+  fi
+  # Shutdown may flush config: repair only after a successful stop.
+  api_touched=1
+  audit api-stop PRIMARY
+  unraid-api stop 9>&-
+  if [ "$disk_current" = 0 ]; then
+    node "$candidate/manager.mjs" backup "$backup"
+    backup_ready=1
+    registration_touched=1
+    node "$candidate/manager.mjs" register "$candidate"
+    node --input-type=module -e "await import('/usr/local/unraid-api/node_modules/unraid-deck-bridge/index.js')"
+    unraid-api plugins install unraid-deck-bridge --bundled --no-restart 9>&-
+  fi
+  audit api-start PRIMARY
+  unraid-api start 9>&-
+else
+  audit api-reload-skipped CURRENT
+fi
 healthy=0
 for attempt in $(seq 1 30); do
   if bash "$candidate/health.sh"; then
@@ -158,4 +201,5 @@ done
   exit 1
 }
 trap - EXIT
+audit activation-ready READY
 echo 'Unraid Deck Bridge API activation READY'

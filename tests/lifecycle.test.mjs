@@ -113,7 +113,7 @@ test('successful install stops API before registration and keeps candidate', (t)
 
 for (const metadataVersion of ['0.6.0', '8.7.6']) {
   for (const matches of [true, false]) {
-    test(`real health handshake ${matches ? 'accepts matching Core' : 'rolls back mismatched Core'} against adapter ${metadataVersion}`, async (t) => {
+    test(`Core version handshake ${matches ? 'accepts matching Core' : 'rolls back mismatched Core'} against adapter ${metadataVersion}`, async (t) => {
       const f = lifecycle(t, { previous: true });
       write(
         path.join(f.stage, 'adapter/package.json'),
@@ -143,7 +143,7 @@ for (const metadataVersion of ['0.6.0', '8.7.6']) {
       });
       assert.ok(
         coreRequests.length > 0,
-        'real curl reached the Core /info peer',
+        'real detector reached the Core /info peer',
       );
       for (const request of coreRequests) {
         assert.equal(request.url, '/info');
@@ -178,12 +178,6 @@ for (const metadataVersion of ['0.6.0', '8.7.6']) {
       );
       if (matches) {
         assert.equal(coreRequests.length, 2);
-        assert.equal(apiRequests.length, 1);
-        assert.equal(apiRequests[0].url, '/graphql');
-        assert.equal(apiRequests[0].method, 'POST');
-        assert.deepEqual(JSON.parse(apiRequests[0].body), {
-          query: '{ deckBridge { info { version } } }',
-        });
         assert.equal(
           fs.readlinkSync(path.join(f.runtime, 'current')),
           candidate,
@@ -194,7 +188,6 @@ for (const metadataVersion of ['0.6.0', '8.7.6']) {
           fs.readFileSync(path.join(candidate, 'rc.unraid-deck-bridge')),
         );
         assert.ok(!events.includes('manager restore'));
-        assert.equal(events.at(-1), 'api start');
         assert.ok(result.stdout.includes('API activation READY'));
       } else {
         assert.equal(

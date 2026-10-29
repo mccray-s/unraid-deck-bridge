@@ -40,6 +40,11 @@ function hostFixture(t, version) {
       JSON.stringify({ version: value }),
     ]),
   ]);
+  // Keep drift synthetic even when the test runs on a matching Unraid host.
+  for (const file of Object.keys(
+    compatibilityMatrix.os[version]?.dockerFiles ?? {},
+  ))
+    files.set(file, Buffer.from('fixture Docker Manager drift\n'));
   const arch = Object.getOwnPropertyDescriptor(process, 'arch');
   Object.defineProperty(process, 'arch', { ...arch, value: 'x64' });
   t.after(() => Object.defineProperty(process, 'arch', arch));

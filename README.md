@@ -33,6 +33,10 @@ See the [API reference](docs/api.md). Host support is defined by the [compatibil
 
 The installer downloads and verifies the matching release package automatically. Plugin registration alone does not confirm activation; resolve any installation or availability error before using management controls.
 
+After registration, activation waits at least 10 seconds, then requires three stable API observations two seconds apart, with a five-minute startup deadline. An API restart is only requested when extension files or registration need repair, or the running API has not loaded the expected adapter. Startup, authentication, and connection uncertainty cause waiting or failure, not a forced restart. Core or Docker unavailability alone does not request an API restart.
+
+Lifecycle diagnostics survive reboots in `/boot/config/plugins/unraid-deck-bridge/logs/lifecycle.log`, with one rotated `.1` file, each capped at 256 KiB. They record startup phases, expected and loaded adapter versions, reload/skip decisions, and final activation status without credentials. Plugin registration is not the same as activation reaching `READY`.
+
 ## Removal
 
 1. Open your Unraid Web UI and go to **Plugins → Installed Plugins**.

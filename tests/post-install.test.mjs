@@ -119,6 +119,44 @@ function fixture(t, mode = 'success', options = {}) {
   }
   write(controller, source);
   write(
+    path.join(candidate, 'lifecycle-log.mjs'),
+    fs
+      .readFileSync(path.join(repo, 'packaging/lifecycle-log.mjs'), 'utf8')
+      .replace(
+        "const BASE = '/boot/config/plugins/unraid-deck-bridge';",
+        `const BASE = ${JSON.stringify(path.join(root, 'boot/plugins/unraid-deck-bridge'))};`,
+      )
+      .replace('const OWNER = 0;', `const OWNER = ${process.getuid()};`)
+      .replace(
+        'stat.uid !== OWNER ||',
+        '(stat.uid !== OWNER && stat.uid !== 0) ||',
+      ),
+  );
+  write(
+    path.join(candidate, 'adapter/package.json'),
+    JSON.stringify({ version: '0.6.0' }),
+  );
+  write(
+    path.join(candidate, 'api-runtime.mjs'),
+    `
+import fs from 'node:fs';
+const gate = ${JSON.stringify(path.join(root, 'api-ready'))};
+export async function inspectRuntime() {
+  return { ready: ${!options.apiWait} || fs.existsSync(gate), adapter: 'current' };
+}
+export async function waitForApi({ valid, onWait }) {
+  const deadline = Date.now() + 800;
+  do {
+    if (!valid()) throw Object.assign(new Error(), { code: 'JOB_CANCELLED' });
+    if ((await inspectRuntime()).ready) return { code: 'ADAPTER_CURRENT', identity: '12:34/56:78', expectedVersion: '0.6.0', loadedVersion: '0.6.0' };
+    onWait('API_PROCESS_MISSING');
+    await new Promise(resolve => setTimeout(resolve, 20));
+  } while (Date.now() < deadline);
+  throw Object.assign(new Error(), { code: 'API_STARTUP_TIMEOUT' });
+}
+`,
+  );
+  write(
     captureModule,
     rewrite(
       fs.readFileSync(path.join(repo, 'packaging/plg-capture.mjs'), 'utf8'),
@@ -395,6 +433,80 @@ test('controller rejects malformed schedule arguments without leaking input', ()
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /SCHEDULE_ARGUMENTS/);
 });
+test(
+  'persistent lifecycle evidence deduplicates wait reasons and activation-lock polling',
+  { skip: !linux },
+  async (t) => {
+    const f = fixture(t, 'success', { apiWait: true, holdAfterHook: true });
+    await f.scheduled();
+    await f.commitThenLock();
+    const log = path.join(
+      f.root,
+      'boot/plugins/unraid-deck-bridge/logs/lifecycle.log',
+    );
+    const records = () =>
+      fs.readFileSync(log, 'utf8').trim().split('\n').map(JSON.parse);
+    await until(() =>
+      records().some((entry) => entry.event === 'api-wait-reason'),
+    );
+    await delay(100);
+    write(path.join(f.root, 'api-ready'), '');
+    await until(f.status, (entry) => entry?.phase === 'activation-lock');
+    await delay(100);
+    f.unlock();
+    assert.equal((await until(f.status, terminal)).state, 'READY');
+    await until(() => records().some((entry) => entry.state === 'READY'));
+    const entries = records();
+    assert.equal(
+      entries.filter((entry) => entry.event === 'api-wait-begin').length,
+      1,
+    );
+    assert.equal(
+      entries.filter((entry) => entry.event === 'api-wait-reason').length,
+      1,
+    );
+    assert.equal(
+      entries.find((entry) => entry.event === 'api-wait-reason').code,
+      'API_PROCESS_MISSING',
+    );
+    assert.equal(
+      entries.filter((entry) => entry.event === 'api-wait-ready').length,
+      1,
+    );
+    assert.equal(
+      entries.filter(
+        (entry) =>
+          entry.event === 'job-status' && entry.phase === 'activation-lock',
+      ).length,
+      1,
+    );
+    assert.equal(entries.filter((entry) => entry.state === 'READY').length, 1);
+    assert.ok(entries.every((entry) => entry.job?.startsWith('post-install-')));
+  },
+);
+
+test(
+  'persistent logging failure cannot change successful activation status',
+  { skip: !linux },
+  async (t) => {
+    const f = fixture(t);
+    write(
+      path.join(f.root, 'boot/plugins/unraid-deck-bridge/logs'),
+      'unknown file',
+    );
+    await f.scheduled();
+    f.release();
+    assert.equal((await until(f.status, terminal)).state, 'READY');
+    assert.equal(f.events(), 'activated\n');
+    assert.equal(
+      fs.readFileSync(
+        path.join(f.root, 'boot/plugins/unraid-deck-bridge/logs'),
+        'utf8',
+      ),
+      'unknown file',
+    );
+  },
+);
 
 test(
   'stale status temporary files cannot prevent a selected worker from activating',
@@ -1274,3 +1386,54 @@ for (const unsafeStaging of ['directory', 'hardlink'])
       f.assertPrepared();
     },
   );
+
+test(
+  'startup wait does not hold lifecycle lock and resumes after readiness',
+  { skip: !linux },
+  async (t) => {
+    const f = fixture(t, 'success', { apiWait: true });
+    await f.scheduled();
+    f.release();
+    await until(f.status, (s) => s.phase === 'api-startup');
+    f.assertPrepared();
+    await f.lock();
+    write(path.join(f.root, 'api-ready'), '');
+    f.unlock();
+    const result = await until(f.status, terminal);
+    assert.equal(result.state, 'READY', JSON.stringify(result));
+    assert.equal(f.events(), 'activated\n');
+  },
+);
+
+test(
+  'startup timeout leaves native commit and runtime untouched',
+  { skip: !linux },
+  async (t) => {
+    const f = fixture(t, 'success', { apiWait: true, update: true });
+    await f.scheduled();
+    f.release();
+    const result = await until(f.status, terminal);
+    assert.equal(result.code, 'API_STARTUP_TIMEOUT', JSON.stringify(result));
+    f.assertPrepared();
+    assert.ok(fs.existsSync(f.persisted));
+  },
+);
+
+test(
+  'uninstall ownership revocation during startup wait cannot resurrect runtime',
+  { skip: !linux },
+  async (t) => {
+    const f = fixture(t, 'success', { apiWait: true });
+    await f.scheduled();
+    f.release();
+    await until(f.status, (s) => s.phase === 'api-startup');
+    fs.rmSync(path.join(f.root, 'run/activation-job'));
+    fs.rmSync(f.registered);
+    fs.rmSync(f.persisted);
+    write(path.join(f.root, 'api-ready'), '');
+    await delay(300);
+    assert.equal(f.current(), '');
+    assert.equal(f.events(), '');
+    assert.ok(!fs.existsSync(f.registered));
+  },
+);

@@ -113,18 +113,6 @@ test('activation snapshots actual old rc, switches runtime and checks Core befor
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(fs.readlinkSync(path.join(f.runtime, 'current')), f.candidate);
   assert.equal(fs.readFileSync(f.coreState, 'utf8'), 'new\n');
-  assert.deepEqual(f.events(), [
-    'manager preflight',
-    'schedule',
-    'stop-only old',
-    'newcore start',
-    'api stop',
-    'manager backup',
-    'manager register',
-    'import',
-    'api plugins install unraid-deck-bridge --bundled --no-restart',
-    'api start',
-  ]);
   const backup = f.activationArgs().at(-3);
   assert.equal(
     fs.readFileSync(path.join(backup, 'module'), 'utf8'),
@@ -196,4 +184,37 @@ test('failed activation retains live candidate and recovery files when candidate
   assert.ok(!f.events().includes('oldcore start'));
   assert.ok(fs.existsSync(path.join(f.activationArgs().at(-3), 'service')));
   assert.ok(f.events().includes('api start'));
+});
+
+test('healthy loaded adapter preserves API process and registration bytes', (t) => {
+  const f = prepared(t);
+  f.commit();
+  const result = f.activate({ DISK_CURRENT: '1' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(fs.readlinkSync(path.join(f.runtime, 'current')), f.candidate);
+  assert.equal(fs.readFileSync(f.coreState, 'utf8'), 'new\n');
+  untouchedAPI(f);
+  assert.ok(!f.events().some((event) => event.startsWith('api ')));
+  assert.ok(!f.events().includes('manager register'));
+});
+
+test('missing loaded adapter reloads once without rewriting correct disk state', (t) => {
+  const f = prepared(t);
+  f.commit();
+  const result = f.activate({ DISK_CURRENT: '1', RUNTIME_MISSING: '1' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(fs.readFileSync(f.moduleFile, 'utf8'), 'official-old\n');
+  assert.equal(f.events().filter((event) => event === 'api stop').length, 1);
+  assert.equal(f.events().filter((event) => event === 'api start').length, 1);
+  assert.ok(!f.events().includes('manager register'));
+});
+
+test('unknown runtime defers activation without changing either service', (t) => {
+  const f = prepared(t);
+  f.commit();
+  const result = f.activate({ RUNTIME_UNKNOWN: '1' });
+  assert.equal(result.status, 75, result.stdout + result.stderr);
+  oldRuntime(f);
+  untouchedAPI(f);
+  assert.ok(!f.events().some((event) => event.startsWith('api ')));
 });
