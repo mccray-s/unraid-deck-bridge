@@ -9,11 +9,9 @@ import { promisify } from 'node:util';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
-const packageVersion = JSON.parse(
-  fs.readFileSync(path.join(root, 'package.json'), 'utf8'),
+const releaseVersion = JSON.parse(
+  fs.readFileSync(path.join(root, 'release.json'), 'utf8'),
 ).version;
-const nextVersion = (version) =>
-  version.replace(/\d+$/, (patch) => String(BigInt(patch) + 1n));
 
 function fixture(t, metadata) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-version-'));
@@ -32,9 +30,9 @@ function fixture(t, metadata) {
     path.join(dir, 'package.json'),
     JSON.stringify({ type: 'module', version: '9.9.9' }),
   );
-  const packagePath = path.join(dir, 'adapter/package.json');
-  fs.rmSync(packagePath, { force: true });
-  if (metadata !== undefined) fs.writeFileSync(packagePath, metadata);
+  const releasePath = path.join(dir, 'adapter/release.json');
+  fs.rmSync(releasePath, { force: true });
+  if (metadata !== undefined) fs.writeFileSync(releasePath, metadata);
   return { dir, entry: pathToFileURL(path.join(dir, 'adapter/index.js')).href };
 }
 
@@ -44,10 +42,10 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 const [entry, dir, expected] = process.argv.slice(1);
-const differentVersion = expected.replace(/\d+$/, (patch) => String(BigInt(patch) + 1n));
+const differentVersion = '2027.01.01';
 const api = await import(entry);
 // Metadata is a module-load snapshot, not filesystem IO on each request.
-fs.writeFileSync(new URL('./package.json', entry), JSON.stringify({ type: 'module', version: '8.8.8' }));
+fs.writeFileSync(new URL('./release.json', entry), JSON.stringify({ version: '2028.01.01' }));
 const service = new api.DeckBridgeService();
 const context = { req: { user: { id: 'version-principal' } } };
 let coreVersion = expected;
@@ -92,16 +90,22 @@ try {
   assert.equal(info.compatible, true);
   assert.ok(info.capabilities.includes('system.read'));
   for (const write of writes) assert.equal((await write()).accepted, true);
-  coreVersion = differentVersion;
-  const mismatch = await service.info(context);
-  assert.equal(mismatch.version, expected);
-  assert.equal(mismatch.compatible, false);
-  assert.equal(mismatch.reason, 'CORE_VERSION_MISMATCH');
-  assert.deepEqual(mismatch.capabilities, []);
-  for (const write of writes) {
-    requests.length = 0;
-    await assert.rejects(write, (error) => error.extensions.code === 'CORE_VERSION_MISMATCH');
-    assert.deepEqual(requests.map((request) => request.path), ['/info']);
+  const [year, month, date] = expected.split('.');
+  const day = Number(date.slice(0, 2));
+  const revision = date.slice(2);
+  const npmVersion = Number(year) + '.' + Number(month) + '.' + (day * 100 + (revision ? revision.charCodeAt(0) - 96 : 0));
+  for (const incompatibleVersion of [differentVersion, npmVersion, '0.1.1']) {
+    coreVersion = incompatibleVersion;
+    const mismatch = await service.info(context);
+    assert.equal(mismatch.version, expected);
+    assert.equal(mismatch.compatible, false);
+    assert.equal(mismatch.reason, 'CORE_VERSION_MISMATCH');
+    assert.deepEqual(mismatch.capabilities, []);
+    for (const write of writes) {
+      requests.length = 0;
+      await assert.rejects(write, (error) => error.extensions.code === 'CORE_VERSION_MISMATCH');
+      assert.deepEqual(requests.map((request) => request.path), ['/info']);
+    }
   }
   // Both cancellation transports carry the local runtime version, with no
   // preliminary /info even when the daemon's /info endpoint is unavailable.
@@ -128,12 +132,9 @@ try {
 }
 `;
 
-for (const version of [packageVersion, nextVersion(packageVersion)]) {
-  test(`adapter metadata ${version} controls info, strict domain matching and cancellation`, async (t) => {
-    const { dir, entry } = fixture(
-      t,
-      JSON.stringify({ type: 'module', version }),
-    );
+for (const version of [releaseVersion, '2026.10.30']) {
+  test(`canonical adapter metadata ${version} controls info, strict domain matching and cancellation`, async (t) => {
+    const { dir, entry } = fixture(t, JSON.stringify({ version }));
     await exec(
       process.execPath,
       ['--input-type=module', '-e', behavior, entry, dir, version],
@@ -149,11 +150,11 @@ for (const [label, metadata] of [
   ['non-string version', JSON.stringify({ type: 'module', version: 6 })],
   ['null version', JSON.stringify({ type: 'module', version: null })],
   ['empty version', JSON.stringify({ type: 'module', version: '' })],
-  ['invalid version', JSON.stringify({ type: 'module', version: '0.7' })],
-  [
-    'trailing-newline version',
-    JSON.stringify({ type: 'module', version: '0.7.1\n' }),
-  ],
+  ['invalid version', JSON.stringify({ version: '0.7' })],
+  ['legacy version', JSON.stringify({ version: '0.1.1' })],
+  ['npm version', JSON.stringify({ version: '2026.10.2901' })],
+  ['invalid date', JSON.stringify({ version: '2026.02.29' })],
+  ['trailing-newline version', JSON.stringify({ version: '2026.10.29a\n' })],
 ]) {
   test(`adapter import rejects ${label} without falling back to parent package`, async (t) => {
     const { entry } = fixture(t, metadata);
@@ -164,8 +165,7 @@ for (const [label, metadata] of [
         'await import(process.argv[1])',
         entry,
       ]),
-      (error) =>
-        error.code !== 0 && /package\.json|package config/i.test(error.stderr),
+      (error) => error.code !== 0 && /release\.json/i.test(error.stderr),
     );
   });
 }

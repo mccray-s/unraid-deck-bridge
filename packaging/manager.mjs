@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { assertSupportedHost } from './adapter/check-host.js';
+import { parseReleaseVersion } from './adapter/release-version.mjs';
 const api = '/usr/local/unraid-api';
 const base = '/boot/config/plugins/unraid-deck-bridge';
 const runtime = '/usr/local/emhttp/plugins/unraid-deck-bridge';
@@ -24,10 +25,10 @@ const write = (p, v) => {
 };
 function adapterVersion(source) {
   const { version } = read(path.join(source, 'adapter', 'package.json'));
-  if (
-    typeof version !== 'string' ||
-    /^[0-9]+\.[0-9]+\.[0-9]+$/.exec(version)?.[0] !== version
-  )
+  const release = parseReleaseVersion(
+    read(path.join(source, 'adapter', 'release.json')).version,
+  );
+  if (version !== release.npmVersion)
     throw new Error('Invalid adapter package version');
   return version;
 }
@@ -57,6 +58,8 @@ function register(source) {
     'check-host.js',
     'compatibility.json',
     'package.json',
+    'release.json',
+    'release-version.mjs',
   ])
     fs.copyFileSync(path.join(source, 'adapter', file), path.join(dest, file));
   // The API must be stopped so shutdown cannot overwrite these edits.
@@ -137,6 +140,8 @@ else if (cmd === 'check') {
     'check-host.js',
     'compatibility.json',
     'package.json',
+    'release.json',
+    'release-version.mjs',
   ])
     if (
       !fs

@@ -37,6 +37,12 @@ After registration, activation waits at least 10 seconds, then requires three st
 
 Lifecycle diagnostics survive reboots in `/boot/config/plugins/unraid-deck-bridge/logs/lifecycle.log`, with one rotated `.1` file, each capped at 256 KiB. They record startup phases, expected and loaded adapter versions, reload/skip decisions, and final activation status without credentials. Plugin registration is not the same as activation reaching `READY`.
 
+## Updates and release identity
+
+Use the normal **Plugins → Installed Plugins → Check for Updates / Update** flow, including upgrades from Bridge `0.1.1`. Do not uninstall first or clear settings, task journals, or recovery records. After the update, reconnect if needed and confirm **Available** in Unraid Deck; native plugin registration alone does not establish readiness.
+
+The native plugin, Bridge and Core report the same release identity, for example `2026.10.29a`. Releases use `YYYY.MM.DD` with an optional same-day `a`–`z` revision, ordered as the base date, then `a` through `z`, then the next day. Published releases, including `2026.10.29`, remain immutable; fixes receive a new release identity. Full native update history is maintained in [CHANGELOG.md](CHANGELOG.md).
+
 ## Removal
 
 1. Open your Unraid Web UI and go to **Plugins → Installed Plugins**.

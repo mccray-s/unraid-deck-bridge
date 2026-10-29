@@ -1,6 +1,6 @@
 {
   "name": "unraid-deck-bridge",
-  "version": "0.1.1",
+  "version": "2026.10.2901",
   "private": true,
   "type": "module",
   "license": "GPL-2.0-or-later",
@@ -10,13 +10,14 @@
     "npm": ">=10.9.8 <11"
   },
   "scripts": {
+    "prebuild": "node scripts/sync-release-version.mjs",
     "build": "tsc -p tsconfig.json && node scripts/prepare-build.mjs",
     "test": "npm run build && node scripts/schema.mjs --check && node --test tests/*.test.mjs",
     "schema": "npm run build && node scripts/schema.mjs",
     "prepackage": "npm run build",
     "package": "node scripts/package.mjs",
-    "format": "prettier --write 'api-extension/*.ts' 'scripts/*.mjs' 'packaging/*.mjs' 'tests/**/*.mjs' && shfmt -w -i 2 -ci packaging/*.sh packaging/rc.unraid-deck-bridge",
-    "format:check": "prettier --check 'api-extension/*.ts' 'scripts/*.mjs' 'packaging/*.mjs' 'tests/**/*.mjs' && shfmt -d -i 2 -ci packaging/*.sh packaging/rc.unraid-deck-bridge",
+    "format": "prettier --write 'api-extension/*.{ts,mjs,mts}' 'scripts/*.mjs' 'packaging/*.mjs' 'tests/**/*.mjs' && shfmt -w -i 2 -ci packaging/*.sh packaging/rc.unraid-deck-bridge",
+    "format:check": "prettier --check 'api-extension/*.{ts,mjs,mts}' 'scripts/*.mjs' 'packaging/*.mjs' 'tests/**/*.mjs' && shfmt -d -i 2 -ci packaging/*.sh packaging/rc.unraid-deck-bridge",
     "compatibility:audit": "node scripts/audit-compatibility.mjs",
     "preruntime:check": "npm run build",
     "runtime:check": "node scripts/check-host-runtimes.mjs"
@@ -61,8 +62,5 @@
   "overrides": {
     "ws": "8.21.0",
     "csv-parse": "7.0.2"
-  },
-  "bridge": {
-    "pluginVersion": "2026.10.29"
   }
 }

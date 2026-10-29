@@ -15,6 +15,7 @@ import {
 import { releaseFixture, parsePlugin } from './helpers/release.mjs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { removalHTTP } from './helpers/removal-http.mjs';
+import { parseReleaseVersion } from '../api-extension/release-version.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function write(file, content, mode = 0o600) {
@@ -37,13 +38,12 @@ function installation(t, options) {
 function assertOldState(f) {
   assert.equal(
     fs.readlinkSync(path.join(f.runtime, 'current')),
-    path.join(f.runtime, 'releases/previous'),
+    path.join(f.runtime, 'releases/0.1.1-00c5ac46d699'),
   );
-  assert.ok(fs.readFileSync(f.service, 'utf8').includes('oldcore'));
   assert.equal(fs.readFileSync(f.moduleFile, 'utf8'), 'official-old\n');
   assert.equal(
     fs.readFileSync(
-      path.join(f.runtime, 'releases/previous/deck-bridge-core'),
+      path.join(f.runtime, 'releases/0.1.1-00c5ac46d699/deck-bridge-core'),
       'utf8',
     ),
     'old core bytes\n',
@@ -111,20 +111,26 @@ test('successful install stops API before registration and keeps candidate', (t)
   assert.ok(!f.events.includes('manager restore'));
 });
 
-for (const metadataVersion of ['0.6.0', '8.7.6']) {
+for (const metadataVersion of ['2026.10.29a', '2026.11.01z']) {
   for (const matches of [true, false]) {
     test(`Core version handshake ${matches ? 'accepts matching Core' : 'rolls back mismatched Core'} against adapter ${metadataVersion}`, async (t) => {
       const f = lifecycle(t, { previous: true });
       write(
         path.join(f.stage, 'adapter/package.json'),
+        JSON.stringify({
+          version: parseReleaseVersion(metadataVersion).npmVersion,
+        }),
+      );
+      write(
+        path.join(f.stage, 'adapter/release.json'),
         JSON.stringify({ version: metadataVersion }),
       );
+      f.args[3] = metadataVersion;
       const candidateBuild = `${metadataVersion}-${build.split('-')[1]}`;
       f.args[2] = candidateBuild;
       const candidate = path.join(f.runtime, 'releases', candidateBuild);
       const coreVersion = matches ? metadataVersion : '0.0.1';
       const health = await versionedHealth(t, f, { coreVersion });
-      const previousService = fs.readFileSync(f.service);
       const result = await health.install();
       const events = f.events();
       const requests = health.requests();
@@ -183,10 +189,6 @@ for (const metadataVersion of ['0.6.0', '8.7.6']) {
           candidate,
         );
         assert.equal(fs.readFileSync(f.moduleFile, 'utf8'), 'official-new\n');
-        assert.deepEqual(
-          fs.readFileSync(f.service),
-          fs.readFileSync(path.join(candidate, 'rc.unraid-deck-bridge')),
-        );
         assert.ok(!events.includes('manager restore'));
         assert.ok(result.stdout.includes('API activation READY'));
       } else {
@@ -201,7 +203,6 @@ for (const metadataVersion of ['0.6.0', '8.7.6']) {
           'Core mismatch fails before GraphQL health',
         );
         assertOldState(f);
-        assert.deepEqual(fs.readFileSync(f.service), previousService);
         assert.equal(fs.readFileSync(f.coreState, 'utf8'), 'old\n');
         assert.ok(!events.includes('manager restore'));
         assert.equal(
@@ -624,7 +625,7 @@ for (const missingRuntime of [false, true]) {
     assert.ok(!fs.existsSync(hook));
   });
 }
-test('registration rollback preserves unrelated metadata added after snapshot', (t) => {
+test('legacy 0.1.1 adapter upgrade and rollback preserve task recovery and unrelated metadata', (t) => {
   const root = fixture(t);
   const api = path.join(root, 'api'),
     config = path.join(
@@ -639,9 +640,40 @@ test('registration rollback preserves unrelated metadata added after snapshot', 
     JSON.stringify({
       version: '4.36.1+f3205d97',
       dependencies: { official: '1', [poc]: '0.0.1' },
+      peerDependencies: { [name]: '0.1.1' },
     }),
   );
-  write(config, JSON.stringify({ plugins: ['official', poc], sandbox: true }));
+  write(
+    config,
+    JSON.stringify({ plugins: ['official', poc, name], sandbox: true }),
+  );
+  const adapter = path.join(api, 'node_modules', name);
+  const legacyFiles = {
+    'index.js': 'export const capturedVersion = "0.1.1";\n',
+    'package.json': JSON.stringify({ name, version: '0.1.1', type: 'module' }),
+    'core-client.js': 'export const legacy = true;\n',
+    'runtime.types.js': 'export const legacyType = true;\n',
+    'configuration-feedback.js': 'export const legacyFeedback = true;\n',
+    'check-host.js': 'export const legacyHost = true;\n',
+    'compatibility.json': '{"legacy":true}\n',
+  };
+  for (const [file, bytes] of Object.entries(legacyFiles))
+    write(path.join(adapter, file), bytes);
+  const state = path.join(root, 'boot/plugins/unraid-deck-bridge');
+  const preserved = {
+    'tasks/task-docker-42.json': JSON.stringify({
+      id: 'task-docker-42',
+      state: 'running',
+    }),
+    'journal/docker.jsonl': '{"taskId":"task-docker-42","phase":"pulling"}\n',
+    'recovery/pending.json': JSON.stringify({
+      taskId: 'task-docker-42',
+      candidate: 'container-42',
+      phase: 'awaiting-recovery',
+    }),
+  };
+  for (const [file, bytes] of Object.entries(preserved))
+    write(path.join(state, file), bytes);
   write(path.join(root, 'unraid-version'), 'version="7.3.2"');
   write(path.join(root, 'package.json'), JSON.stringify({ type: 'module' }));
   const candidate = path.join(root, 'candidate');
@@ -656,7 +688,7 @@ test('registration rollback preserves unrelated metadata added after snapshot', 
   ])
     write(path.join(candidate, 'adapter', f), '{}');
   const metadata = path.join(candidate, 'adapter/package.json');
-  const version = '8.12.34';
+  const version = '2026.10.2901';
   const packageBytes = JSON.stringify({
     name,
     version,
@@ -665,6 +697,18 @@ test('registration rollback preserves unrelated metadata added after snapshot', 
     license: 'GPL-2.0-only',
   });
   write(metadata, packageBytes);
+  write(
+    path.join(candidate, 'adapter/release.json'),
+    JSON.stringify({ version: '2026.10.29a' }),
+  );
+  for (const dest of [candidate, root])
+    write(
+      path.join(dest, 'adapter/release-version.mjs'),
+      fs.readFileSync(
+        path.join(repo, 'api-extension/release-version.mjs'),
+        'utf8',
+      ),
+    );
   let script = rewriteHostPaths(
     fs.readFileSync(path.join(repo, 'packaging/manager.mjs'), 'utf8'),
     root,
@@ -697,9 +741,17 @@ test('registration rollback preserves unrelated metadata added after snapshot', 
     assert.equal(r.status, 0, r.stderr);
   };
   run('backup', backup);
+  assert.ok(!fs.existsSync(path.join(backup, 'adapter/release.json')));
+  assert.ok(!fs.existsSync(path.join(backup, 'adapter/release-version.mjs')));
   run('register', candidate);
   let pkg = JSON.parse(fs.readFileSync(path.join(api, 'package.json')));
   assert.equal(pkg.peerDependencies[name], version);
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(adapter, 'release.json'))).version,
+    '2026.10.29a',
+  );
+  for (const [file, bytes] of Object.entries(preserved))
+    assert.equal(fs.readFileSync(path.join(state, file), 'utf8'), bytes);
   assert.equal(pkg.dependencies[poc], '0.0.1');
   const beforeCurrent = [
     fs.readFileSync(path.join(api, 'package.json'), 'utf8'),
@@ -739,10 +791,12 @@ test('registration rollback preserves unrelated metadata added after snapshot', 
   unchangedFailure('check');
   pkg.peerDependencies[name] = version;
   write(apiPackage, JSON.stringify(pkg));
-  const installed = path.join(api, 'node_modules', name, 'index.js');
-  write(installed, 'different registered adapter');
-  unchangedFailure('check');
-  fs.copyFileSync(path.join(candidate, 'adapter/index.js'), installed);
+  for (const file of ['index.js', 'release.json', 'release-version.mjs']) {
+    const installed = path.join(adapter, file);
+    write(installed, 'different registered adapter');
+    unchangedFailure('check');
+    fs.copyFileSync(path.join(candidate, 'adapter', file), installed);
+  }
   for (const invalid of [
     '{}',
     '{"version":null}',
@@ -779,10 +833,18 @@ test('registration rollback preserves unrelated metadata added after snapshot', 
   cfg = JSON.parse(fs.readFileSync(config));
   assert.equal(pkg.dependencies.unrelated, '2');
   assert.equal(pkg.dependencies[poc], '0.0.2');
-  assert.ok(!pkg.peerDependencies?.[name]);
+  assert.equal(pkg.peerDependencies[name], '0.1.1');
   assert.ok(cfg.plugins.includes('unrelated'));
   assert.ok(cfg.plugins.includes(poc));
-  assert.ok(!cfg.plugins.includes(name));
+  assert.ok(cfg.plugins.includes(name));
+  assert.deepEqual(
+    fs.readdirSync(adapter).sort(),
+    Object.keys(legacyFiles).sort(),
+  );
+  for (const [file, bytes] of Object.entries(legacyFiles))
+    assert.equal(fs.readFileSync(path.join(adapter, file), 'utf8'), bytes);
+  for (const [file, bytes] of Object.entries(preserved))
+    assert.equal(fs.readFileSync(path.join(state, file), 'utf8'), bytes);
   assert.equal(cfg.sandbox, true);
   const sensitive = 'private-admin-token-never-log';
   write(metadata, `{"version": "${sensitive}", invalid}`);

@@ -37,6 +37,12 @@
 
 生命周期日志跨重启保存在 `/boot/config/plugins/unraid-deck-bridge/logs/lifecycle.log`，另保留一个 `.1` 轮转文件，每个文件上限 256 KiB。日志记录启动阶段、目标和已加载适配器版本、重启／跳过决定及最终启用状态，不记录凭据。插件已登记不等于后台启用已达到 `READY`。
 
+## 更新与版本标识
+
+包括从 Bridge `0.1.1` 升级在内，均使用正常的 **Plugins（插件）→ Installed Plugins（已安装插件）→ Check for Updates / Update（检查更新／更新）** 流程。不要先卸载，也不要清除设置、任务日志或恢复记录。更新后按需重新连接，并在 Unraid Deck 中确认状态为 **可用**；原生插件已登记不代表后台已就绪。
+
+原生插件、Bridge 和 Core 使用同一个版本标识，例如 `2026.10.29a`。版本采用 `YYYY.MM.DD`，可附加当天的 `a`–`z` 修订后缀，顺序为无后缀日期、`a` 至 `z`，再到下一天。包括 `2026.10.29` 在内的已发布版本保持不可变，修复必须使用新版本标识。完整原生更新历史维护在 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 卸载
 
 1. 打开 Unraid WebUI，进入 **Plugins（插件）→ Installed Plugins（已安装插件）**。

@@ -19,6 +19,7 @@ service=/etc/rc.d/rc.unraid-deck-bridge
 node --input-type=module - "$candidate" "$backup" "$previous" "$plugin_version" <<'NODE'
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 const [candidate, backup, previous, version] = process.argv.slice(2);
 const runtime = '/usr/local/emhttp/plugins/unraid-deck-bridge';
 const base = '/boot/config/plugins/unraid-deck-bridge';
@@ -54,10 +55,14 @@ function realDirectory(file, parent) {
 if (!realDirectory(candidate, runtime + '/releases') ||
     !realDirectory(backup, base + '/backups') ||
     (previous && !realDirectory(previous, runtime + '/releases')) ||
-    !/^\d{4}\.\d{2}\.\d{2}$/.test(version) || !currentMatches ||
+    !/^\d{4}\.\d{2}\.\d{2}[a-z]?$/.test(version) || !currentMatches ||
     !fs.lstatSync(registered).isSymbolicLink() ||
     fs.realpathSync(registered) !== persisted ||
     !fs.lstatSync(persisted).isFile()) throw new Error('Stale or unregistered Bridge activation');
+const { parseReleaseVersion } = await import(pathToFileURL(candidate + '/adapter/release-version.mjs'));
+parseReleaseVersion(version);
+if (JSON.parse(fs.readFileSync(candidate + '/adapter/release.json', 'utf8')).version !== version)
+  throw new Error('Candidate release does not match activation');
 const xml = fs.readFileSync(persisted, 'utf8');
 const plugin = xml.match(/<PLUGIN\b([^>]*)>/);
 const attrs = Object.fromEntries([...((plugin?.[1] || '').matchAll(/([A-Za-z][\w-]*)\s*=\s*(["'])(.*?)\2/g))].map(m => [m[1], m[3]]));
@@ -116,7 +121,11 @@ rollback() {
       ln -sfn "$previous" "$runtime/current" || recovery_failed=1
     else rm -f "$runtime/current" || recovery_failed=1; fi
   fi
-  if [ "$service_installed" = 1 ]; then
+  if [ "$core_stopped" = 1 ] && [ -n "$previous" ] && [ "$recovery_failed" = 0 ]; then
+    # Native registration stays committed. Keep a supervisor that understands
+    # its version format while running the selected previous payload.
+    install -m 755 "$candidate/rc.unraid-deck-bridge" "$service" || recovery_failed=1
+  elif [ "$service_installed" = 1 ]; then
     if [ -f "$backup/service" ]; then
       install -m 755 "$backup/service" "$service" || recovery_failed=1
     else rm -f "$service" || recovery_failed=1; fi

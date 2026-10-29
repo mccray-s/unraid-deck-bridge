@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import bridgePackage from '../dist/package.json' with { type: 'json' };
+import bridgePackage from '../dist/release.json' with { type: 'json' };
 import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';

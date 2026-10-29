@@ -6,11 +6,15 @@ import http from 'node:http';
 import { once } from 'node:events';
 import { spawn } from 'node:child_process';
 import test from 'node:test';
-import {
-  inspectRuntime,
-  inspectCore,
-  waitForApi,
-} from '../packaging/api-runtime.mjs';
+import { pathToFileURL } from 'node:url';
+import { stageRuntimeInspector } from './helpers/lifecycle.mjs';
+const runtimeRoot = fs.mkdtempSync(
+  path.join(os.tmpdir(), 'bridge-runtime-module-'),
+);
+const { inspectRuntime, inspectCore, waitForApi } = await import(
+  pathToFileURL(stageRuntimeInspector(runtimeRoot))
+);
+test.after(() => fs.rmSync(runtimeRoot, { recursive: true, force: true }));
 
 async function fixture(t) {
   const root = fs.realpathSync(
@@ -24,7 +28,7 @@ async function fixture(t) {
     coreSocket: path.join(root, 'c.sock'),
     tokenPath: path.join(root, 'session'),
     ownerUid: process.getuid(),
-    expectedVersion: '0.6.0',
+    expectedVersion: '2026.10.29a',
     requestTimeoutMs: 80,
   };
   fs.mkdirSync(options.procRoot);
@@ -32,7 +36,7 @@ async function fixture(t) {
   fs.writeFileSync(options.tokenPath, secret, { mode: 0o600 });
   const state = {
     loaded: true,
-    version: '0.6.0',
+    version: '2026.10.29a',
     coreOnline: true,
     compatible: true,
     accepting: true,
@@ -171,8 +175,8 @@ test('loaded version is proven independently of Core or Docker availability', as
   const f = await fixture(t);
   const current = await inspectRuntime(f.options);
   assert.equal(current.adapter, 'current');
-  assert.equal(current.expectedVersion, '0.6.0');
-  assert.equal(current.loadedVersion, '0.6.0');
+  assert.equal(current.expectedVersion, '2026.10.29a');
+  assert.equal(current.loadedVersion, '2026.10.29a');
   f.state.coreOnline = false;
   f.state.compatible = false;
   const offline = await inspectRuntime(f.options);
@@ -182,8 +186,12 @@ test('loaded version is proven independently of Core or Docker availability', as
   assert.equal((await inspectCore(f.options)).healthy, true);
   f.state.accepting = false;
   assert.equal((await inspectCore(f.options)).healthy, false);
-  f.state.version = '0.5.0';
-  assert.equal((await inspectRuntime(f.options)).adapter, 'different');
+  f.state.version = '0.1.1';
+  const legacy = await inspectRuntime(f.options);
+  assert.equal(legacy.adapter, 'different');
+  assert.equal(legacy.code, 'ADAPTER_DIFFERENT');
+  assert.equal(legacy.loadedVersion, '0.1.1');
+  assert.equal(legacy.expectedVersion, '2026.10.29a');
 });
 
 test('schema proof distinguishes not loaded yet, old loaded code, and post-reload target', async (t) => {
@@ -192,7 +200,7 @@ test('schema proof distinguishes not loaded yet, old loaded code, and post-reloa
   assert.deepEqual(await inspectRuntime(f.options), {
     ready: true,
     identity: '11:100/12:100',
-    expectedVersion: '0.6.0',
+    expectedVersion: '2026.10.29a',
     adapter: 'missing',
     code: 'ADAPTER_MISSING',
   });
@@ -205,7 +213,7 @@ test('schema proof distinguishes not loaded yet, old loaded code, and post-reloa
     ['node', '/usr/local/unraid-api/dist/main.js'],
     '101',
   );
-  f.state.version = '0.6.0';
+  f.state.version = '2026.10.29a';
   const after = await inspectRuntime(f.options);
   assert.equal(after.identity, '11:101/12:100');
   assert.equal(after.adapter, 'current');
@@ -568,8 +576,12 @@ test('CLI exit codes preserve reload decisions and health requirements', async (
   );
   fs.mkdirSync(path.join(f.root, 'adapter'));
   fs.writeFileSync(
-    path.join(f.root, 'adapter/package.json'),
-    JSON.stringify({ version: '0.6.0' }),
+    path.join(f.root, 'adapter/release.json'),
+    JSON.stringify({ version: '2026.10.29a' }),
+  );
+  fs.copyFileSync(
+    new URL('../api-extension/release-version.mjs', import.meta.url),
+    path.join(f.root, 'adapter/release-version.mjs'),
   );
   const run = async (command) => {
     const child = spawn(process.execPath, [entry, command], {
@@ -596,7 +608,7 @@ test('CLI exit codes preserve reload decisions and health requirements', async (
   assert.equal((await run('ready')).code, 0);
   assert.equal((await run('loaded')).code, 10);
   f.state.loaded = true;
-  f.state.version = '0.5.0';
+  f.state.version = '0.1.1';
   assert.equal((await run('loaded')).code, 10);
   f.state.auth = false;
   assert.equal((await run('loaded')).code, 75);
@@ -608,14 +620,14 @@ test('CLI exit codes preserve reload decisions and health requirements', async (
   assert.equal(entries[0].code, 'API_AUTH_UNKNOWN');
   f.state.auth = true;
   assert.equal((await run('decision')).code, 10);
-  f.state.version = '0.6.0';
+  f.state.version = '2026.10.29a';
   assert.equal((await run('decision')).code, 0);
   f.state.loaded = false;
   assert.equal((await run('decision')).code, 10);
   entries = fs.readFileSync(log, 'utf8').trim().split('\n').map(JSON.parse);
   assert.equal(entries.length, 4);
-  assert.equal(entries[1].expectedVersion, '0.6.0');
-  assert.equal(entries[1].loadedVersion, '0.5.0');
+  assert.equal(entries[1].expectedVersion, '2026.10.29a');
+  assert.equal(entries[1].loadedVersion, '0.1.1');
   assert.equal(entries[2].identity, '11:100/12:100');
   assert.ok(!fs.readFileSync(log, 'utf8').includes(f.secret));
   f.state.auth = false;
@@ -626,7 +638,7 @@ test('CLI exit codes preserve reload decisions and health requirements', async (
   f.state.loaded = false;
   for (const metadata of [{}, { version: null }, { version: '0.6.0\n' }]) {
     fs.writeFileSync(
-      path.join(f.root, 'adapter/package.json'),
+      path.join(f.root, 'adapter/release.json'),
       JSON.stringify(metadata),
     );
     assert.equal((await run('loaded')).code, 75);
@@ -637,8 +649,8 @@ test('CLI exit codes preserve reload decisions and health requirements', async (
     );
   }
   fs.writeFileSync(
-    path.join(f.root, 'adapter/package.json'),
-    JSON.stringify({ version: '0.6.0' }),
+    path.join(f.root, 'adapter/release.json'),
+    JSON.stringify({ version: '2026.10.29a' }),
   );
   fs.writeFileSync(
     path.join(f.root, 'lifecycle-log.mjs'),

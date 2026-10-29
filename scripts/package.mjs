@@ -12,6 +12,10 @@ import {
   XMLSerializer,
   onWarningStopParsing,
 } from '@xmldom/xmldom';
+import {
+  parseReleaseVersion,
+  compareReleaseVersions,
+} from '../api-extension/release-version.mjs';
 
 const repo = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const sha256 = (data) => createHash('sha256').update(data).digest('hex');
@@ -126,6 +130,8 @@ const adapterFiles = [
   'check-host.js',
   'compatibility.json',
   'package.json',
+  'release.json',
+  'release-version.mjs',
 ];
 const packagingFiles = [
   'install.sh',
@@ -140,22 +146,47 @@ const packagingFiles = [
   'repair.sh',
   'remove.sh',
 ];
-function validatePluginVersion(value) {
-  if (!matches(/^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$/, value))
-    throw new Error('Plugin version must be YYYY.MM.DD');
-  const [year, month, day] = value.split('.').map(Number);
-  const date = new Date(0);
-  date.setUTCFullYear(year, month - 1, day);
-  if (
-    year < 1 ||
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
-  )
-    throw new Error('Plugin version requires a valid date');
-  return value;
+function loadRelease() {
+  const bytes = regularBytes(path.join(repo, 'release.json'));
+  const metadata = JSON.parse(bytes);
+  if (!isDeepStrictEqual(Object.keys(metadata), ['version']))
+    throw new Error('release.json must contain only version');
+  return { ...parseReleaseVersion(metadata.version), bytes };
 }
-async function buildArchive(coreInput, pkg) {
+function loadChanges(version) {
+  const changes = regularBytes(path.join(repo, 'CHANGELOG.md'))
+    .toString('utf8')
+    .trim();
+  let previous;
+  let bullets = 0;
+  for (const line of changes.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    if (line.startsWith('###')) {
+      const current = parseReleaseVersion(line.slice(3)).version;
+      if (previous === undefined && current !== version)
+        throw new Error('Latest CHANGELOG section must match release.json');
+      if (
+        previous !== undefined &&
+        (!bullets || compareReleaseVersions(previous, current) <= 0)
+      )
+        throw new Error(
+          'CHANGELOG sections require bullets and unique descending release versions',
+        );
+      previous = current;
+      bullets = 0;
+    } else {
+      if (previous === undefined || !/^- \S/.test(line))
+        throw new Error(
+          'CHANGELOG must contain ###VERSION sections and bullet entries',
+        );
+      bullets++;
+    }
+  }
+  if (previous === undefined || !bullets)
+    throw new Error('CHANGELOG requires nonempty release history');
+  return changes;
+}
+async function buildArchive(coreInput, pkg, release) {
   const selected = new Map();
   for (const name of adapterFiles)
     selected.set(`adapter/${name}`, path.join(repo, 'dist', name));
@@ -176,6 +207,20 @@ async function buildArchive(coreInput, pkg) {
   )
     throw new Error(
       'Built adapter compatibility does not match the verified contract; rebuild the adapter',
+    );
+  if (!members.get('adapter/release.json').equals(release.bytes))
+    throw new Error(
+      'Built adapter release metadata does not match release.json; rebuild the adapter',
+    );
+  if (
+    !members
+      .get('adapter/release-version.mjs')
+      .equals(
+        regularBytes(path.join(repo, 'api-extension/release-version.mjs')),
+      )
+  )
+    throw new Error(
+      'Built adapter release helper is stale; rebuild the adapter',
     );
   const adapterPackage = JSON.parse(members.get('adapter/package.json'));
   const expectedPackage = {
@@ -264,6 +309,7 @@ function buildPlugin(
   digest,
   removeScript,
   captureScript,
+  changes,
 ) {
   const doc = new DOMImplementation().createDocument(null, 'PLUGIN');
   const plugin = doc.documentElement;
@@ -286,12 +332,7 @@ function buildPlugin(
     parent.appendChild(child);
     return child;
   }
-  element(
-    plugin,
-    'CHANGES',
-    {},
-    `${version}: Wait for API startup, reload only when needed, and retain lifecycle diagnostics across reboots.`,
-  );
+  element(plugin, 'CHANGES', {}, changes);
   const preflight = element(plugin, 'FILE', { Run: '/bin/bash' });
   element(
     preflight,
@@ -397,7 +438,7 @@ echo 'Package prepared; runtime/API activation pending native plugin registratio
       '\n',
   );
 }
-function validatePluginOutput(file, version, digest) {
+function validatePluginOutput(file, version, digest, data) {
   if (path.basename(file) !== 'unraid-deck-bridge.plg')
     throw new Error('PLG basename must remain unraid-deck-bridge.plg');
   const stat = statIfPresent(file);
@@ -430,12 +471,16 @@ function validatePluginOutput(file, version, digest) {
     !matches(/^[0-9a-f]{64}$/, text(resources[0], 'SHA256'))
   )
     throw new Error(`Existing PLG is missing release fields: ${file}`);
-  validatePluginVersion(oldVersion);
-  if (version < oldVersion)
-    throw new Error('Plugin version must increase lexicographically');
+  parseReleaseVersion(oldVersion);
+  if (compareReleaseVersions(version, oldVersion) < 0)
+    throw new Error('Release version must increase lexicographically');
   if (version === oldVersion && text(resources[0], 'SHA256') !== digest)
     throw new Error(
       'Same plugin version has different archive SHA256; increment plugin version',
+    );
+  if (version === oldVersion && !fs.readFileSync(file).equals(data))
+    throw new Error(
+      'Same release version has different PLG content; increment release version',
     );
 }
 function atomicWrite(file, data) {
@@ -466,7 +511,6 @@ async function main() {
       help: { type: 'boolean', short: 'h' },
       core: { type: 'string' },
       out: { type: 'string' },
-      'plugin-version': { type: 'string' },
       repository: { type: 'string' },
       branch: { type: 'string' },
       'plg-out': { type: 'string' },
@@ -483,8 +527,6 @@ Options:
                             must be in the same directory.
                             Default: core-bin/linux-amd64/deck-bridge-core
                             relative to the repository root.
-  --plugin-version VERSION  Plugin version (YYYY.MM.DD).
-                            Default: package.json bridge.pluginVersion.
   --repository OWNER/REPO    Public GitHub repository; enables static PLG output.
                             Default: archive only, without writing a PLG.
   --branch BRANCH           Single branch segment for the PLG update URL.
@@ -514,11 +556,16 @@ Options:
   if (!matches(/^[A-Za-z0-9][A-Za-z0-9._-]*$/, branch))
     throw new Error('--branch must be a single nonempty branch segment');
   const pkg = JSON.parse(fs.readFileSync(path.join(repo, 'package.json')));
-  if (!matches(/^[0-9]+\.[0-9]+\.[0-9]+$/, pkg.version))
-    throw new Error('Package version must be MAJOR.MINOR.PATCH');
-  const pluginVersion = validatePluginVersion(
-    values['plugin-version'] ?? pkg.bridge.pluginVersion,
-  );
+  const release = loadRelease();
+  if (
+    pkg.version !== release.npmVersion ||
+    pkg.bridge?.pluginVersion !== undefined
+  )
+    throw new Error(
+      'Package metadata does not match canonical release.json; synchronize release metadata',
+    );
+  const pluginVersion = release.version;
+  const changes = loadChanges(pluginVersion);
   const core = path.resolve(
     values.core ?? path.join(repo, 'core-bin/linux-amd64/deck-bridge-core'),
   );
@@ -526,9 +573,10 @@ Options:
   const { data, removeScript, captureScript } = await buildArchive(
       coreInput,
       pkg,
+      release,
     ),
     digest = sha256(data),
-    build = `${pkg.version}-${digest.slice(0, 12)}`;
+    build = `${pluginVersion}-${digest.slice(0, 12)}`;
   const out = path.resolve(values.out),
     archive = path.join(
       out,
@@ -558,8 +606,9 @@ Options:
       digest,
       removeScript,
       captureScript,
+      changes,
     );
-    validatePluginOutput(plugin, pluginVersion, digest);
+    validatePluginOutput(plugin, pluginVersion, digest, pluginData);
   }
   atomicWrite(archive, data);
   atomicWrite(sums, Buffer.from(`${digest}  ${path.basename(archive)}\n`));

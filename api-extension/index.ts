@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { parseReleaseVersion } from './release-version.mjs';
 import { PrefixedID } from '@unraid/shared/prefixed-id-scalar.js';
 import {
   DeckBridgeHealthcheckInput,
@@ -73,20 +74,19 @@ const bridgeVersion: string = (() => {
   let metadata: unknown;
   try {
     metadata = JSON.parse(
-      fs.readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+      fs.readFileSync(new URL('./release.json', import.meta.url), 'utf8'),
     );
   } catch {
-    throw new Error('Bridge runtime package.json is missing or invalid JSON');
+    throw new Error('Bridge runtime release.json is missing or invalid JSON');
   }
   const version = (metadata as { version?: unknown } | null)?.version;
-  if (
-    typeof version !== 'string' ||
-    !/^[0-9]+\.[0-9]+\.[0-9]+(?![\s\S])/.test(version)
-  )
+  try {
+    return parseReleaseVersion(version).version;
+  } catch {
     throw new Error(
-      'Bridge runtime package.json requires a valid version (major.minor.patch)',
+      'Bridge runtime release.json requires a valid date version',
     );
-  return version;
+  }
 })();
 
 assertSupportedHost();

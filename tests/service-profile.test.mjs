@@ -31,6 +31,10 @@ test('manager emits only a verified known template profile without disabling oth
     "const assertSupportedHost=()=>{const h=JSON.parse(process.env.HOST_REPORT);if(h.fail)throw new Error('unsupported');return h;};",
   );
   write(file, script);
+  write(
+    path.join(root, 'adapter/release-version.mjs'),
+    fs.readFileSync(new URL('api-extension/release-version.mjs', repo), 'utf8'),
+  );
   for (const [report, expected] of [
     [
       {

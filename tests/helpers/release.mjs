@@ -6,6 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { DOMParser } from '@xmldom/xmldom';
 
+import { parseReleaseVersion } from '../../api-extension/release-version.mjs';
 export const repo = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../..',
@@ -37,6 +38,18 @@ export function elf() {
   data[120] = 0xc3;
   return data;
 }
+export function setReleaseVersion(root, version) {
+  const { npmVersion } = parseReleaseVersion(version);
+  const bytes = JSON.stringify({ version }) + '\n';
+  write(path.join(root, 'release.json'), bytes);
+  write(path.join(root, 'dist/release.json'), bytes);
+  for (const name of ['package.json', 'dist/package.json']) {
+    const file = path.join(root, name);
+    const metadata = JSON.parse(fs.readFileSync(file, 'utf8'));
+    metadata.version = npmVersion;
+    write(file, JSON.stringify(metadata) + '\n');
+  }
+}
 export function releaseFixture(t) {
   const root = fs.realpathSync(
     fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-release-')),
@@ -57,8 +70,7 @@ export function releaseFixture(t) {
       name: 'unraid-deck-bridge',
       type: 'module',
       license: 'GPL-2.0-or-later',
-      version: '0.6.0',
-      bridge: { pluginVersion: '2026.10.26' },
+      version: '2026.10.2901',
     }),
   );
   write(
@@ -81,12 +93,22 @@ export function releaseFixture(t) {
     path.join(root, 'dist/package.json'),
     JSON.stringify({
       name: 'unraid-deck-bridge',
-      version: '0.6.0',
+      version: '2026.10.2901',
       type: 'module',
       main: 'index.js',
       license: 'GPL-2.0-or-later',
     }) + '\n',
   );
+  for (const directory of ['api-extension', 'dist'])
+    write(
+      path.join(root, directory, 'release-version.mjs'),
+      fs.readFileSync(path.join(repo, 'api-extension/release-version.mjs')),
+    );
+  write(
+    path.join(root, 'CHANGELOG.md'),
+    fs.readFileSync(path.join(repo, 'CHANGELOG.md')),
+  );
+  setReleaseVersion(root, '2026.10.29a');
   fs.cpSync(path.join(repo, 'packaging'), path.join(root, 'packaging'), {
     recursive: true,
   });

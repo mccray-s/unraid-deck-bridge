@@ -9,11 +9,11 @@ runtime=/usr/local/emhttp/plugins/unraid-deck-bridge
 staging="$1"
 build="$2"
 plugin_version="$3"
-[[ "$plugin_version" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$ ]] || {
+[[ "$plugin_version" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}[a-z]?$ ]] || {
   echo 'Invalid Bridge plugin version' >&2
   exit 1
 }
-[[ "$build" =~ ^[0-9]+\.[0-9]+\.[0-9]+-[0-9a-f]{12}$ ]] || {
+[[ "$build" =~ ^[0-9]{4}\.[0-9]{2}\.[0-9]{2}[a-z]?-[0-9a-f]{12}$ ]] || {
   echo 'Invalid Bridge build identifier' >&2
   exit 1
 }
@@ -28,7 +28,22 @@ if [ -d "$runtime/current" ] && [ "$(cd "$runtime/current" && pwd -P)" = "$stagi
   echo 'STAGING must not be the current release' >&2
   exit 1
 fi
-version=$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).version' "$staging/adapter/package.json")
+version=$(
+  node --input-type=module - "$staging" <<'NODE'
+import fs from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const adapter = process.argv[2] + '/adapter/';
+const { parseReleaseVersion } = await import(pathToFileURL(adapter + 'release-version.mjs'));
+const release = parseReleaseVersion(JSON.parse(fs.readFileSync(adapter + 'release.json', 'utf8')).version);
+if (JSON.parse(fs.readFileSync(adapter + 'package.json', 'utf8')).version !== release.npmVersion)
+  throw new Error('Candidate package version does not match release');
+process.stdout.write(release.version);
+NODE
+)
+[[ "$plugin_version" == "$version" ]] || {
+  echo 'Plugin version does not match the candidate release' >&2
+  exit 1
+}
 [[ "$build" == "$version-"* ]] || {
   echo 'BUILD does not match the candidate adapter version' >&2
   exit 1

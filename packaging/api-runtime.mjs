@@ -4,6 +4,10 @@ import path from 'node:path';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { logLifecycle } from './lifecycle-log.mjs';
+import {
+  parseReleaseVersion,
+  isObservedReleaseVersion,
+} from './adapter/release-version.mjs';
 
 const DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULTS = {
@@ -21,20 +25,17 @@ const failure = (code) => Object.assign(new Error(code), { code });
 function settings(options) {
   return { ...DEFAULTS, ...options };
 }
-function stableVersion(value) {
-  return (
-    typeof value === 'string' &&
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value) &&
-    !value.includes('\n')
-  );
-}
 function expectedVersion(options) {
   const version = Object.hasOwn(options, 'expectedVersion')
     ? options.expectedVersion
     : JSON.parse(
-        fs.readFileSync(path.join(DIRECTORY, 'adapter/package.json'), 'utf8'),
+        fs.readFileSync(path.join(DIRECTORY, 'adapter/release.json'), 'utf8'),
       ).version;
-  if (!stableVersion(version)) throw failure('METADATA_UNKNOWN');
+  try {
+    parseReleaseVersion(version);
+  } catch {
+    throw failure('METADATA_UNKNOWN');
+  }
   return version;
 }
 function check(valid) {
@@ -347,7 +348,7 @@ export async function inspectRuntime(input = {}) {
       throw failure('API_PROCESS_CHANGED');
     const info = data.deckBridge?.info;
     if (
-      !stableVersion(info?.version) ||
+      !isObservedReleaseVersion(info?.version) ||
       typeof info.coreOnline !== 'boolean' ||
       typeof info.compatible !== 'boolean'
     )

@@ -13,9 +13,8 @@ function prepared(t, options = {}) {
 function oldRuntime(f) {
   assert.equal(
     fs.readlinkSync(path.join(f.runtime, 'current')),
-    path.join(f.runtime, 'releases/previous'),
+    path.join(f.runtime, 'releases/0.1.1-00c5ac46d699'),
   );
-  assert.ok(fs.readFileSync(f.service, 'utf8').includes('oldcore'));
   assert.equal(fs.readFileSync(f.coreState, 'utf8'), 'old\n');
 }
 function untouchedAPI(f) {
@@ -90,7 +89,7 @@ for (const guard of [
       );
     }
     if (guard === 'redirected previous') {
-      const previous = path.join(f.runtime, 'releases/previous');
+      const previous = path.join(f.runtime, 'releases/0.1.1-00c5ac46d699');
       fs.renameSync(previous, path.join(f.root, 'redirected-previous'));
       fs.symlinkSync(path.join(f.root, 'redirected-previous'), previous);
     }
@@ -149,6 +148,20 @@ for (const previous of [false, true]) {
   ]) {
     test(`activation ${fail} failure recovers ${previous ? 'old runtime' : 'absent runtime'} and retains native commit`, (t) => {
       const f = prepared(t, { previous });
+      const persistent = path.join(f.root, 'boot/plugins/unraid-deck-bridge');
+      const preserved = {
+        'state/operations/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json':
+          '{"taskId":"task-42","phase":"pulling"}\n',
+        'backups/retained/task-42.json': '{"id":"task-42","state":"running"}\n',
+        'recovery/pending.json':
+          '{"taskId":"task-42","candidate":"container-42"}\n',
+      };
+      for (const [file, bytes] of Object.entries(preserved)) {
+        fs.mkdirSync(path.dirname(path.join(persistent, file)), {
+          recursive: true,
+        });
+        fs.writeFileSync(path.join(persistent, file), bytes);
+      }
       f.commit();
       const result = f.activate({ FAIL_AT: fail });
       assert.notEqual(result.status, 0, result.stdout + result.stderr);
@@ -166,6 +179,11 @@ for (const previous of [false, true]) {
         !['core-start', 'core-health', 'api-stop', 'backup'].includes(fail),
       );
       assert.ok(fs.existsSync(f.candidate));
+      for (const [file, bytes] of Object.entries(preserved))
+        assert.equal(
+          fs.readFileSync(path.join(persistent, file), 'utf8'),
+          bytes,
+        );
       assert.ok(
         fs.existsSync(path.join(f.root, 'boot/plugins/unraid-deck-bridge.plg')),
       );
@@ -180,7 +198,6 @@ test('failed activation retains live candidate and recovery files when candidate
   assert.match(result.stdout, /Recovery incomplete/);
   assert.equal(fs.readlinkSync(path.join(f.runtime, 'current')), f.candidate);
   assert.equal(fs.readFileSync(f.coreState, 'utf8'), 'new\n');
-  assert.ok(fs.readFileSync(f.service, 'utf8').includes('newcore'));
   assert.ok(!f.events().includes('oldcore start'));
   assert.ok(fs.existsSync(path.join(f.activationArgs().at(-3), 'service')));
   assert.ok(f.events().includes('api start'));

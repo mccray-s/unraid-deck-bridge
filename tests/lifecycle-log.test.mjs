@@ -33,8 +33,15 @@ function fixture(t, present = true) {
   const entry = path.join(root, 'current.mjs');
   fs.symlinkSync(module, entry);
   write(
-    path.join(root, 'release/adapter/package.json'),
-    JSON.stringify({ version: '0.1.1' }),
+    path.join(root, 'release/adapter/release.json'),
+    JSON.stringify({ version: '2026.10.29a' }),
+  );
+  write(
+    path.join(root, 'release/adapter/release-version.mjs'),
+    fs.readFileSync(
+      path.join(repo, 'api-extension/release-version.mjs'),
+      'utf8',
+    ),
   );
   if (present) fs.mkdirSync(base, { mode: 0o700 });
   const directory = path.join(base, 'logs');
@@ -79,8 +86,8 @@ test(
     const [entry] = f.records();
     assert.equal(entry.event, 'activation-ready');
     assert.equal(entry.code, 'READY');
-    assert.equal(entry.programVersion, '0.1.1');
-    assert.equal(entry.expectedVersion, '0.1.1');
+    assert.equal(entry.programVersion, '2026.10.29a');
+    assert.equal(entry.expectedVersion, '2026.10.29a');
     assert.equal(
       entry.boot,
       fs.readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim(),
@@ -185,8 +192,8 @@ test(
     const details = {
       code: 'ADAPTER_CURRENT',
       identity: '12:34/56:78',
-      loadedVersion: '0.1.0',
-      expectedVersion: '0.1.1',
+      loadedVersion: '0.1.1',
+      expectedVersion: '2026.10.29a',
       coreOnline: true,
       compatible: false,
       job: 'post-install-ABC123',
@@ -207,7 +214,7 @@ test(
     assert.equal(result.status, 0, result.stderr);
     const [entry] = f.records();
     assert.equal(entry.identity, '12:34/56:78');
-    assert.equal(entry.loadedVersion, '0.1.0');
+    assert.equal(entry.loadedVersion, '0.1.1');
     assert.equal(entry.coreOnline, true);
     assert.equal(entry.compatible, false);
     assert.doesNotMatch(

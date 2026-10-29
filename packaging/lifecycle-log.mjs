@@ -3,14 +3,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import {
+  parseReleaseVersion,
+  isObservedReleaseVersion,
+} from './adapter/release-version.mjs';
 
 const BASE = '/boot/config/plugins/unraid-deck-bridge';
 const OWNER = 0;
 const MAX_BYTES = 256 * 1024;
 const SELF = fileURLToPath(import.meta.url);
 const token = /^[a-zA-Z][a-zA-Z0-9_-]{0,79}$/;
-const version =
-  /^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]{1,64})?(?:\+[a-zA-Z0-9.-]{1,64})?$/;
 
 function safeStat(target, directory = false) {
   const stat = fs.lstatSync(target);
@@ -66,7 +68,7 @@ function metadata() {
   try {
     const adapter = path.join(path.dirname(SELF), 'adapter');
     safeStat(adapter, true);
-    const file = path.join(adapter, 'package.json');
+    const file = path.join(adapter, 'release.json');
     const stat = safeStat(file);
     if (stat.size <= 65536) {
       const fd = fs.openSync(
@@ -76,8 +78,7 @@ function metadata() {
       try {
         if (!same(stat, fs.fstatSync(fd))) throw new Error('UNSAFE_ENTRY');
         const value = JSON.parse(fs.readFileSync(fd, 'utf8')).version;
-        if (typeof value === 'string' && version.test(value))
-          programVersion = value;
+        programVersion = parseReleaseVersion(value).version;
       } finally {
         fs.closeSync(fd);
       }
@@ -112,8 +113,7 @@ function fields(details) {
   )
     result.identity = details.identity;
   for (const key of ['expectedVersion', 'loadedVersion']) {
-    if (typeof details[key] === 'string' && version.test(details[key]))
-      result[key] = details[key];
+    if (isObservedReleaseVersion(details[key])) result[key] = details[key];
   }
   for (const key of ['diskCurrent', 'coreOnline', 'compatible']) {
     if (typeof details[key] === 'boolean') result[key] = details[key];

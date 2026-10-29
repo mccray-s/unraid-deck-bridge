@@ -13,6 +13,7 @@ import {
 } from './plg-capture.mjs';
 import { inspectRuntime, waitForApi } from './api-runtime.mjs';
 import { logLifecycle } from './lifecycle-log.mjs';
+import { parseReleaseVersion } from './adapter/release-version.mjs';
 
 const RUN = '/var/run/unraid-deck-bridge';
 const RUNTIME = '/usr/local/emhttp/plugins/unraid-deck-bridge';
@@ -556,8 +557,9 @@ async function runWorker(job) {
 async function schedule(args) {
   if (args.length !== 4) throw new Error('SCHEDULE_ARGUMENTS');
   const [candidate, backup, previous, version] = args;
+  parseReleaseVersion(version);
   if (
-    !/^\d{4}\.\d{2}\.\d{2}$/.test(version) ||
+    !/^\d{4}\.\d{2}\.\d{2}[a-z]?$/.test(version) ||
     fs.realpathSync(candidate) !== candidate ||
     path.dirname(candidate) !== path.join(RUNTIME, 'releases') ||
     !currentMatches(previous) ||

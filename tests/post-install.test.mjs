@@ -11,6 +11,7 @@ import {
   releaseFixture,
   parsePlugin,
 } from './helpers/release.mjs';
+import { stageRuntimeInspector } from './helpers/lifecycle.mjs';
 
 const linux = process.platform === 'linux';
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -32,7 +33,7 @@ function fixture(t, mode = 'success', options = {}) {
   );
   const run = path.join(root, 'run');
   const runtime = path.join(root, 'runtime');
-  const candidate = path.join(runtime, 'releases/0.6.0-123456abcdef');
+  const candidate = path.join(runtime, 'releases/2026.10.29a-123456abcdef');
   const previous = options.update
     ? path.join(runtime, 'releases/0.5.0-abcdef123456')
     : '';
@@ -134,7 +135,18 @@ function fixture(t, mode = 'success', options = {}) {
   );
   write(
     path.join(candidate, 'adapter/package.json'),
-    JSON.stringify({ version: '0.6.0' }),
+    JSON.stringify({ version: '2026.10.2901' }),
+  );
+  write(
+    path.join(candidate, 'adapter/release.json'),
+    JSON.stringify({ version: '2026.10.29a' }),
+  );
+  write(
+    path.join(candidate, 'adapter/release-version.mjs'),
+    fs.readFileSync(
+      path.join(repo, 'api-extension/release-version.mjs'),
+      'utf8',
+    ),
   );
   write(
     path.join(candidate, 'api-runtime.mjs'),
@@ -148,7 +160,7 @@ export async function waitForApi({ valid, onWait }) {
   const deadline = Date.now() + 800;
   do {
     if (!valid()) throw Object.assign(new Error(), { code: 'JOB_CANCELLED' });
-    if ((await inspectRuntime()).ready) return { code: 'ADAPTER_CURRENT', identity: '12:34/56:78', expectedVersion: '0.6.0', loadedVersion: '0.6.0' };
+    if ((await inspectRuntime()).ready) return { code: 'ADAPTER_CURRENT', identity: '12:34/56:78', expectedVersion: '2026.10.29a', loadedVersion: '2026.10.29a' };
     onWait('API_PROCESS_MISSING');
     await new Promise(resolve => setTimeout(resolve, 20));
   } while (Date.now() < deadline);
@@ -207,7 +219,7 @@ export async function waitForApi({ valid, onWait }) {
     hook,
     options,
     mode,
-    version: options.version || '2026.10.27',
+    version: options.version || '2026.10.29a',
   };
   const incomingBytes =
     options.xml ||
@@ -424,10 +436,18 @@ process.exit(c.mode === 'failed' ? 7 : 0);
 const terminal = (s) =>
   s && ['READY', 'FAILED', 'SUPERSEDED'].includes(s.state);
 
-test('controller rejects malformed schedule arguments without leaking input', () => {
+test('controller rejects malformed schedule arguments without leaking input', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'bridge-schedule-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  stageRuntimeInspector(root);
+  for (const file of ['post-install.mjs', 'plg-capture.mjs'])
+    write(
+      path.join(root, file),
+      fs.readFileSync(path.join(repo, 'packaging', file)),
+    );
   const result = spawnSync(
     process.execPath,
-    [path.join(repo, 'packaging/post-install.mjs'), 'schedule'],
+    [path.join(root, 'post-install.mjs'), 'schedule'],
     { encoding: 'utf8' },
   );
   assert.notEqual(result.status, 0);
@@ -698,7 +718,7 @@ test(
     const before = fs.readdirSync(f.run);
     const result = spawnSync(
       process.execPath,
-      [f.controller, 'schedule', f.candidate, f.backup, '', '2026.10.27'],
+      [f.controller, 'schedule', f.candidate, f.backup, '', '2026.10.29a'],
       { encoding: 'utf8' },
     );
     assert.notEqual(result.status, 0);

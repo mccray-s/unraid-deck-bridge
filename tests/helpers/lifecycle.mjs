@@ -6,8 +6,23 @@ import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { repo, sha256, write } from './release.mjs';
 
-export const build = '0.6.0-123456abcdef';
-export const pluginVersion = '2026.10.27';
+export const build = '2026.10.29a-123456abcdef';
+export const pluginVersion = '2026.10.29a';
+export function stageRuntimeInspector(root) {
+  for (const file of ['api-runtime.mjs', 'lifecycle-log.mjs'])
+    write(
+      path.join(root, file),
+      fs.readFileSync(path.join(repo, 'packaging', file), 'utf8'),
+    );
+  write(
+    path.join(root, 'adapter/release-version.mjs'),
+    fs.readFileSync(
+      path.join(repo, 'api-extension/release-version.mjs'),
+      'utf8',
+    ),
+  );
+  return path.join(root, 'api-runtime.mjs');
+}
 export function rewriteHostPaths(source, root) {
   const replacements = {
     '/boot/config/plugins': path.join(root, 'boot/plugins'),
@@ -111,7 +126,18 @@ export function lifecycle(t, { previous = false, fail = '' } = {}) {
   );
   write(
     path.join(stage, 'adapter/package.json'),
-    JSON.stringify({ version: '0.6.0' }),
+    JSON.stringify({ version: '2026.10.2901' }),
+  );
+  write(
+    path.join(stage, 'adapter/release.json'),
+    JSON.stringify({ version: pluginVersion }),
+  );
+  write(
+    path.join(stage, 'adapter/release-version.mjs'),
+    fs.readFileSync(
+      path.join(repo, 'api-extension/release-version.mjs'),
+      'utf8',
+    ),
   );
   write(path.join(stage, 'manager.mjs'), '// stubbed command boundary\n');
   write(
@@ -149,7 +175,17 @@ if (['loaded', 'decision'].includes(process.argv[2]) && process.env.RUNTIME_MISS
   write(path.join(stage, 'deck-bridge-core'), 'new core bytes\n', 0o755);
   write(
     path.join(stage, 'rc.unraid-deck-bridge'),
-    '#!/bin/sh\necho "newcore $1" >> "$EVENTS"\n[ ! -e /dev/fd/9 ] || exit 91\n[ "$1:$FAIL_AT" != start:core-start ] || exit 9\nif [ "$1" = start ]; then printf "new\\n" > "$CORE_STATE"; fi\n',
+    `#!/bin/sh
+case "$(cat ${JSON.stringify(path.join(runtime, 'current/deck-bridge-core'))})" in
+  'new core bytes') selected=new ;;
+  'old core bytes') selected=old ;;
+  *) exit 9 ;;
+esac
+echo "\${selected}core $1" >> "$EVENTS"
+[ ! -e /dev/fd/9 ] || exit 91
+[ "$selected:$1:$FAIL_AT" != new:start:core-start ] || exit 9
+if [ "$1" = start ]; then printf '%s\\n' "$selected" > "$CORE_STATE"; fi
+`,
     0o755,
   );
   write(
@@ -164,16 +200,32 @@ if (['loaded', 'decision'].includes(process.argv[2]) && process.env.RUNTIME_MISS
   fs.mkdirSync(path.dirname(service), { recursive: true });
   if (previous) {
     write(
-      path.join(runtime, 'releases/previous/deck-bridge-core'),
+      path.join(runtime, 'releases/0.1.1-00c5ac46d699/deck-bridge-core'),
       'old core bytes\n',
     );
+    write(
+      path.join(runtime, 'releases/0.1.1-00c5ac46d699/adapter/package.json'),
+      JSON.stringify({ version: '0.1.1' }),
+    );
     fs.symlinkSync(
-      path.join(runtime, 'releases/previous'),
+      path.join(runtime, 'releases/0.1.1-00c5ac46d699'),
       path.join(runtime, 'current'),
     );
     write(
       service,
-      '#!/bin/sh\necho "oldcore $1" >> "$EVENTS"\n[ ! -e /dev/fd/9 ] || exit 91\nif [ "$1" = start ]; then printf "old\\n" > "$CORE_STATE"; fi\n',
+      `#!/bin/sh
+echo "oldcore $1" >> "$EVENTS"
+[ ! -e /dev/fd/9 ] || exit 91
+if [ "$1" = start ]; then
+  "$REAL_NODE" --input-type=module - ${JSON.stringify(path.join(root, 'boot/plugins/unraid-deck-bridge.plg'))} <<'NODE'
+import fs from 'node:fs';
+const version = fs.readFileSync(process.argv[2], 'utf8').match(/version="([^"]+)"/)?.[1];
+if (!/^\\d{4}\\.\\d{2}\\.\\d{2}$/.test(version || '')) process.exit(9);
+NODE
+  [ "$?" = 0 ] || exit 9
+  printf 'old\\n' > "$CORE_STATE"
+fi
+`,
       0o755,
     );
   }
@@ -324,7 +376,7 @@ if [ "$1" = start ] && [ "$RUNTIME_MISSING" = 1 ]; then printf 'reloaded\\n' > "
     const persisted = path.join(root, 'boot/plugins/unraid-deck-bridge.plg');
     write(
       persisted,
-      `<PLUGIN name="unraid-deck-bridge" version="${pluginVersion}"></PLUGIN>`,
+      `<PLUGIN name="unraid-deck-bridge" version="${args[3]}"></PLUGIN>`,
     );
     const registered = path.join(root, 'log/plugins/unraid-deck-bridge.plg');
     fs.mkdirSync(path.dirname(registered), { recursive: true });
@@ -333,7 +385,7 @@ if [ "$1" = start ] && [ "$RUNTIME_MISSING" = 1 ]; then printf 'reloaded\\n' > "
   const activationArgs = (selected = candidate) => {
     const backups = path.join(root, 'boot/plugins/unraid-deck-bridge/backups');
     const backup = path.join(backups, fs.readdirSync(backups)[0]);
-    const previousPath = path.join(runtime, 'releases/previous');
+    const previousPath = path.join(runtime, 'releases/0.1.1-00c5ac46d699');
     const previous = fs.existsSync(previousPath) ? previousPath : '';
     return [
       '-c',
@@ -344,7 +396,7 @@ if [ "$1" = start ] && [ "$RUNTIME_MISSING" = 1 ]; then printf 'reloaded\\n' > "
       selected,
       backup,
       previous,
-      pluginVersion,
+      args[3],
     ];
   };
   const activate = (extraEnv = {}) => run(activationArgs(), extraEnv);
@@ -398,12 +450,13 @@ exit "$status"
     path.join(f.stage, 'health.sh'),
     f.rewrite(fs.readFileSync(path.join(repo, 'packaging/health.sh'), 'utf8')),
   );
+  const inspector = stageRuntimeInspector(path.join(f.root, 'inspector'));
   write(
     path.join(f.stage, 'api-runtime.mjs'),
     `
 import fs from 'node:fs';
-import { inspectCore } from ${JSON.stringify(path.join(repo, 'packaging/api-runtime.mjs'))};
-const expectedVersion = JSON.parse(fs.readFileSync(new URL('./adapter/package.json', import.meta.url))).version;
+import { inspectCore } from ${JSON.stringify(inspector)};
+const expectedVersion = JSON.parse(fs.readFileSync(new URL('./adapter/release.json', import.meta.url))).version;
 const result = await inspectCore({
   coreSocket: ${JSON.stringify(path.join(f.root, 'run/core.sock'))},
   expectedVersion,
