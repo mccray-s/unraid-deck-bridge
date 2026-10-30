@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PLUGIN name="unraid-deck-bridge" author="mccray" version="2026.10.29a" min="6.12.0" icon="releases/2026.10.29a-4c0ae45f48af/assets/unraid-deck-bridge.png" pluginURL="https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/unraid-deck-bridge.plg" support="https://github.com/mccray-s/unraid-deck-bridge/issues" project="https://github.com/mccray-s/unraid-deck-bridge"><CHANGES>###2026.10.29a
+<PLUGIN name="unraid-deck-bridge" author="mccray" version="2026.10.30" min="6.12.0" icon="releases/2026.10.30-7fc3c4216e03/assets/unraid-deck-bridge.png" pluginURL="https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/unraid-deck-bridge.plg" support="https://github.com/mccray-s/unraid-deck-bridge/issues" project="https://github.com/mccray-s/unraid-deck-bridge"><CHANGES>###2026.10.30
+- Fix: Allow newer Unraid OS and API releases above the minimum supported versions.
+- Fix: Keep management capabilities available on newer hosts.
+
+###2026.10.29a
 - Change: Use one date-based release identity across the native plugin, Bridge, Core, diagnostics, and release artifacts.
 - Fix: Activate upgrades from legacy Bridge 0.1.1 through the normal native plugin update without removing settings or task journals.
 - Fix: Restart the previous runtime safely after a failed same-day revision upgrade.
@@ -21,7 +25,7 @@ for dependency in node unraid-api tar sha256sum flock mktemp install curl mv; do
   command -v "$dependency" &gt;/dev/null || { echo "Bridge requires dependency: $dependency" &gt;&amp;2; exit 1; }
 done
 node -e 'if(process.arch!=="x64")process.exit(1)' || { echo 'Bridge requires Node x64 on Linux x86_64' &gt;&amp;2; exit 1; }
-node --input-type=module - '2026.10.29a' &lt;&lt;'BRIDGE_CAPTURE_PLG'
+node --input-type=module - '2026.10.30' &lt;&lt;'BRIDGE_CAPTURE_PLG'
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -206,8 +210,8 @@ try {
   process.exitCode = 1;
 }
 BRIDGE_CAPTURE_PLG
-</INLINE></FILE><FILE Name="/boot/config/plugins/unraid-deck-bridge/packages/2026.10.29a-4c0ae45f48af.tar.gz" Mode="0600"><URL>https://github.com/mccray-s/unraid-deck-bridge/releases/download/v2026.10.29a/unraid-deck-bridge-2026.10.29a-linux-amd64.tar.gz</URL><SHA256>4c0ae45f48af28a7cddc61799505a090274379c0a7bb47436324f9d42d1bfe21</SHA256></FILE><FILE Run="/bin/bash"><INLINE>set -euo pipefail
-echo '4c0ae45f48af28a7cddc61799505a090274379c0a7bb47436324f9d42d1bfe21  /boot/config/plugins/unraid-deck-bridge/packages/2026.10.29a-4c0ae45f48af.tar.gz' | sha256sum -c -
+</INLINE></FILE><FILE Name="/boot/config/plugins/unraid-deck-bridge/packages/2026.10.30-7fc3c4216e03.tar.gz" Mode="0600"><URL>https://github.com/mccray-s/unraid-deck-bridge/releases/download/v2026.10.30/unraid-deck-bridge-2026.10.30-linux-amd64.tar.gz</URL><SHA256>7fc3c4216e0340e28f180d984d02ade8193ec93dbc633411783a421c203aa078</SHA256></FILE><FILE Run="/bin/bash"><INLINE>set -euo pipefail
+echo '7fc3c4216e0340e28f180d984d02ade8193ec93dbc633411783a421c203aa078  /boot/config/plugins/unraid-deck-bridge/packages/2026.10.30-7fc3c4216e03.tar.gz' | sha256sum -c -
 runtime=/usr/local/emhttp/plugins/unraid-deck-bridge
 node --input-type=module - &lt;&lt;'BRIDGE_PREPARE_LOCK'
 import fs from 'node:fs';
@@ -245,8 +249,8 @@ BRIDGE_PREPARE_LOCK
 mkdir -p "$runtime/releases"
 stage=$(mktemp -d "$runtime/releases/.staging-XXXXXX")
 trap 'if [ -d "$stage" ]; then rm -rf -- "$stage"; fi' EXIT
-tar -xzf '/boot/config/plugins/unraid-deck-bridge/packages/2026.10.29a-4c0ae45f48af.tar.gz' -C "$stage"
-bash "$stage/install.sh" "$stage" '2026.10.29a-4c0ae45f48af' '2026.10.29a'
+tar -xzf '/boot/config/plugins/unraid-deck-bridge/packages/2026.10.30-7fc3c4216e03.tar.gz' -C "$stage"
+bash "$stage/install.sh" "$stage" '2026.10.30-7fc3c4216e03' '2026.10.30'
 echo 'Package prepared; runtime/API activation pending native plugin registration.'
 </INLINE></FILE><FILE Run="/bin/bash" Method="remove"><INLINE>#!/bin/bash
 set -euo pipefail
