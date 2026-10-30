@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PLUGIN name="unraid-deck-bridge" author="mccray" version="2026.10.30" min="6.12.0" icon="releases/2026.10.30-7fc3c4216e03/assets/unraid-deck-bridge.png" pluginURL="https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/unraid-deck-bridge.plg" support="https://github.com/mccray-s/unraid-deck-bridge/issues" project="https://github.com/mccray-s/unraid-deck-bridge"><CHANGES>###2026.10.30
+<PLUGIN name="unraid-deck-bridge" author="mccray" version="2026.10.30a" min="6.12.0" icon="releases/2026.10.30a-52a1545bda73/assets/unraid-deck-bridge.png" pluginURL="https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/unraid-deck-bridge.plg" support="https://github.com/mccray-s/unraid-deck-bridge/issues" project="https://github.com/mccray-s/unraid-deck-bridge"><CHANGES>###2026.10.30a
+- Fix: Complete plugin removal when API introspection is disabled.
+
+###2026.10.30
 - Fix: Allow newer Unraid OS and API releases above the minimum supported versions.
 - Fix: Keep management capabilities available on newer hosts.
 
@@ -25,7 +28,7 @@ for dependency in node unraid-api tar sha256sum flock mktemp install curl mv; do
   command -v "$dependency" &gt;/dev/null || { echo "Bridge requires dependency: $dependency" &gt;&amp;2; exit 1; }
 done
 node -e 'if(process.arch!=="x64")process.exit(1)' || { echo 'Bridge requires Node x64 on Linux x86_64' &gt;&amp;2; exit 1; }
-node --input-type=module - '2026.10.30' &lt;&lt;'BRIDGE_CAPTURE_PLG'
+node --input-type=module - '2026.10.30a' &lt;&lt;'BRIDGE_CAPTURE_PLG'
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -210,8 +213,8 @@ try {
   process.exitCode = 1;
 }
 BRIDGE_CAPTURE_PLG
-</INLINE></FILE><FILE Name="/boot/config/plugins/unraid-deck-bridge/packages/2026.10.30-7fc3c4216e03.tar.gz" Mode="0600"><URL>https://github.com/mccray-s/unraid-deck-bridge/releases/download/v2026.10.30/unraid-deck-bridge-2026.10.30-linux-amd64.tar.gz</URL><SHA256>7fc3c4216e0340e28f180d984d02ade8193ec93dbc633411783a421c203aa078</SHA256></FILE><FILE Run="/bin/bash"><INLINE>set -euo pipefail
-echo '7fc3c4216e0340e28f180d984d02ade8193ec93dbc633411783a421c203aa078  /boot/config/plugins/unraid-deck-bridge/packages/2026.10.30-7fc3c4216e03.tar.gz' | sha256sum -c -
+</INLINE></FILE><FILE Name="/boot/config/plugins/unraid-deck-bridge/packages/2026.10.30a-52a1545bda73.tar.gz" Mode="0600"><URL>https://github.com/mccray-s/unraid-deck-bridge/releases/download/v2026.10.30a/unraid-deck-bridge-2026.10.30a-linux-amd64.tar.gz</URL><SHA256>52a1545bda73d00468d23802c6ffd572ac193f7cba9e8644766f05e776129e43</SHA256></FILE><FILE Run="/bin/bash"><INLINE>set -euo pipefail
+echo '52a1545bda73d00468d23802c6ffd572ac193f7cba9e8644766f05e776129e43  /boot/config/plugins/unraid-deck-bridge/packages/2026.10.30a-52a1545bda73.tar.gz' | sha256sum -c -
 runtime=/usr/local/emhttp/plugins/unraid-deck-bridge
 node --input-type=module - &lt;&lt;'BRIDGE_PREPARE_LOCK'
 import fs from 'node:fs';
@@ -249,8 +252,8 @@ BRIDGE_PREPARE_LOCK
 mkdir -p "$runtime/releases"
 stage=$(mktemp -d "$runtime/releases/.staging-XXXXXX")
 trap 'if [ -d "$stage" ]; then rm -rf -- "$stage"; fi' EXIT
-tar -xzf '/boot/config/plugins/unraid-deck-bridge/packages/2026.10.30-7fc3c4216e03.tar.gz' -C "$stage"
-bash "$stage/install.sh" "$stage" '2026.10.30-7fc3c4216e03' '2026.10.30'
+tar -xzf '/boot/config/plugins/unraid-deck-bridge/packages/2026.10.30a-52a1545bda73.tar.gz' -C "$stage"
+bash "$stage/install.sh" "$stage" '2026.10.30a-52a1545bda73' '2026.10.30a'
 echo 'Package prepared; runtime/API activation pending native plugin registration.'
 </INLINE></FILE><FILE Run="/bin/bash" Method="remove"><INLINE>#!/bin/bash
 set -euo pipefail
@@ -288,6 +291,7 @@ const persistent = '/boot/config/plugins/unraid-deck-bridge.plg';
 const registered = '/var/log/plugins/unraid-deck-bridge.plg';
 const archived = '/boot/config/plugins-removed/unraid-deck-bridge.plg';
 const apiSocket = '/var/run/unraid-api.sock';
+const apiSession = '/var/run/unraid-api/local-session';
 const systemRun = path.join('/', 'run');
 const systemServiceDirectory = path.join('/', 'usr', 'local', 'etc', 'rc.d');
 const remnants = [
@@ -458,34 +462,104 @@ function hasBridge(file, value) {
     ? ['dependencies', 'peerDependencies'].some(section =&gt; value[section] &amp;&amp; Object.hasOwn(value[section], name))
     : value.plugins?.includes(name));
 }
-function queryAPI() {
+function apiProcess() {
+  const processes = fs.readdirSync('/proc/').filter(pid =&gt; /^[1-9]\d*$/.test(pid))
+    .map(identity).filter(item =&gt; {
+      if (!item?.args || ['Z', 'X'].includes(item.state) ||
+          !['node', 'nodejs'].includes(path.basename(item.exe))) return false;
+      if (item.args.length === 1 &amp;&amp; item.args[0] === 'node /usr/local/unraid-api/dist/main.js') return true;
+      let index = 1;
+      while (item.args[index]?.startsWith('--')) {
+        if (!['--no-warnings', '--enable-source-maps'].includes(item.args[index])) return false;
+        index++;
+      }
+      return item.args[index] === '/usr/local/unraid-api/dist/main.js';
+    });
+  if (processes.length !== 1) throw new Error('Official API process identity is unknown');
+  return processes[0];
+}
+function localSession(api) {
+  const environment = fs.readFileSync('/proc/' + api.pid + '/environ', 'utf8').split('\0');
+  const override = environment.find(entry =&gt; entry.startsWith('PATHS_LOCAL_SESSION_FILE='));
+  const file = override ? override.slice('PATHS_LOCAL_SESSION_FILE='.length) : apiSession;
+  if (!path.isAbsolute(file)) throw new Error('Unsafe official API local session');
+  for (let parent = path.dirname(file); ; parent = path.dirname(parent)) {
+    let stat = fs.lstatSync(parent);
+    if (stat.isSymbolicLink() &amp;&amp; standardSystemLink(parent))
+      stat = fs.lstatSync(fs.realpathSync(parent));
+    if (!stat.isDirectory() || ![0, productionUID].includes(stat.uid) ||
+        (stat.mode &amp; 0o022 &amp;&amp; !(stat.uid === 0 &amp;&amp; stat.mode &amp; 0o1000)))
+      throw new Error('Unsafe official API local session');
+    if (parent === path.dirname(parent)) break;
+  }
+  const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
+  try {
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile() || stat.uid !== productionUID || stat.mode &amp; 0o077 || stat.size !== 64)
+      throw new Error('Unsafe official API local session');
+    const credential = fs.readFileSync(fd, 'utf8');
+    if (!/^[a-f0-9]{64}$/.test(credential)) throw new Error('Unsafe official API local session');
+    return credential;
+  } finally { fs.closeSync(fd); }
+}
+function graphql(credential, query, allowMissingBridge = false) {
   return new Promise((resolve, reject) =&gt; {
-    const body = JSON.stringify({ query: '{ __schema { queryType { name fields { name } } } }' });
+    const body = JSON.stringify({ query });
     const req = http.request({ socketPath: apiSocket, path: '/graphql', method: 'POST',
-      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } }, res =&gt; {
-      let bytes = '';
-      res.setEncoding('utf8');
-      res.on('data', chunk =&gt; { bytes += chunk; if (bytes.length &gt; 4 * 1024 * 1024) req.destroy(new Error('API response too large')); });
-      res.on('error', reject);
+      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body),
+        'x-local-session': credential } }, res =&gt; {
+      const chunks = [];
+      let size = 0;
+      res.on('data', chunk =&gt; {
+        size += chunk.length;
+        if (size &gt; 4 * 1024 * 1024) req.destroy(new Error('Official API response too large'));
+        else chunks.push(chunk);
+      });
+      res.on('error', () =&gt; reject(new Error('Official API response unavailable')));
       res.on('end', () =&gt; {
         try {
           let value;
-          try { value = JSON.parse(bytes); }
+          try { value = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
           catch { throw new Error('Invalid official GraphQL JSON response'); }
-          const query = value.data?.__schema?.queryType;
-          if (res.statusCode !== 200 || (value.errors &amp;&amp; (!Array.isArray(value.errors) || value.errors.length)) ||
-              query?.name !== 'Query' || !Array.isArray(query.fields) || !query.fields.length ||
-              query.fields.some(field =&gt; typeof field?.name !== 'string' || field.name === 'deckBridge'))
-            throw new Error('Official GraphQL unhealthy or Query.deckBridge remains');
-          resolve();
+          if (![200, 400].includes(res.statusCode) || !value || typeof value !== 'object' || Array.isArray(value))
+            throw new Error('Official API authentication or query failed');
+          // Validation happens before resolver guards: authenticate separately first.
+          if (allowMissingBridge &amp;&amp; Array.isArray(value.errors) &amp;&amp; value.errors.length === 1 &amp;&amp;
+              value.errors[0]?.extensions?.code === 'GRAPHQL_VALIDATION_FAILED' &amp;&amp;
+              /^Cannot query field "deckBridge" on type "Query"\.(?: Did you mean .+\?)?$/.test(value.errors[0]?.message ?? ''))
+            return resolve(null);
+          if (res.statusCode !== 200 || !value.data ||
+              (value.errors !== undefined &amp;&amp; (!Array.isArray(value.errors) || value.errors.length)))
+            throw new Error('Official API authentication or query failed');
+          resolve(value.data);
         } catch (error) { reject(error); }
       });
     });
     const timer = setTimeout(() =&gt; req.destroy(new Error('Official API request timeout')), 3000);
     req.once('close', () =&gt; clearTimeout(timer));
-    req.on('error', reject);
+    req.on('error', () =&gt; reject(new Error('Official API request unavailable')));
     req.end(body);
   });
+}
+function sameAPI(api) {
+  const current = apiProcess();
+  if (current.pid !== api.pid || current.start !== api.start)
+    throw new Error('Official API process changed during verification');
+}
+async function queryAPI() {
+  const api = apiProcess();
+  const credential = localSession(api);
+  const user = await graphql(credential, '{ me { name } }');
+  if (typeof user.me?.name !== 'string') throw new Error('Official API authentication is unknown');
+  sameAPI(api);
+  const bridge = await graphql(credential, '{ deckBridge { info { version coreOnline compatible } } }', true);
+  if (localSession(api) !== credential) throw new Error('Official API local session changed during verification');
+  sameAPI(api);
+  if (bridge === null) return;
+  const info = bridge.deckBridge?.info;
+  if (typeof info?.version !== 'string' || typeof info.coreOnline !== 'boolean' || typeof info.compatible !== 'boolean')
+    throw new Error('Official Bridge namespace presence is unknown');
+  throw Object.assign(new Error('Official Query.deckBridge remains'), { code: 'BRIDGE_PRESENT' });
 }
 async function health() {
   safe(apiSocket);
@@ -504,7 +578,8 @@ async function removeAPI() {
     if (!exists(adapter)) { await health(); return; }
     // Adapter files alone are not an active API entry. Avoid an unnecessary
     // restart when the official schema already proves Bridge is absent.
-    try { await queryAPI(); return; } catch {}
+    try { await queryAPI(); return; }
+    catch (error) { if (error.code !== 'BRIDGE_PRESENT') throw error; }
   }
   const applied = [];
   let stopped = false;
@@ -607,9 +682,10 @@ function installHook() {
   fs.mkdirSync(path.dirname(hook), { recursive: true });
   const constants = { productionUID, STOP_TIMEOUT_MS, TASK_TIMEOUT_MS, HEALTH_TIMEOUT_MS, POLL_MS,
     name, base, runtime, run, service, log, temporary, manifest, config, adapter, hook,
-    persistent, registered, archived, apiSocket, systemRun, systemServiceDirectory, remnants, payload };
+    persistent, registered, archived, apiSocket, apiSession, systemRun, systemServiceDirectory, remnants, payload };
   const functions = [exists, standardSystemLink, safe, erase, sleep, identity, releaseFile, kind,
-    scan, metadata, hasBridge, queryAPI, health, assertStopped, absent, auditBody, finalize, postRemove];
+    scan, metadata, hasBridge, apiProcess, localSession, graphql, sameAPI, queryAPI, health,
+    assertStopped, absent, auditBody, finalize, postRemove];
   const source = '#!/bin/bash\nset -euo pipefail\n' + JSON.stringify(process.execPath) +
     ' --input-type=module - "$@" &lt;&lt;\'BRIDGE_POST_REMOVE\'\n' +
     "import fs from 'node:fs';\nimport path from 'node:path';\nimport http from 'node:http';\n" +
