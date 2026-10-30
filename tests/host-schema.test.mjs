@@ -15,10 +15,7 @@ import {
 import { AuthZGuard } from 'nest-authz';
 import { graphql } from 'graphql';
 import * as api from '../dist/index.js';
-import {
-  compatibilityMatrix,
-  resolveCompatibility,
-} from '../dist/check-host.js';
+import { compatibilityMatrix } from '../dist/check-host.js';
 
 const user = (resource) => ({
   id: 'host-reader',
@@ -26,9 +23,16 @@ const user = (resource) => ({
   action: 'READ_ANY',
 });
 
-function hostFixture(t, version) {
-  const apiVersion = '4.36.1',
-    dependencies = compatibilityMatrix.api[apiVersion].dependencies;
+function hostFixture(t, version, apiVersion = '5.0.0') {
+  const dependencies = Object.fromEntries(
+    Object.entries(compatibilityMatrix.minimumDependencies).map(
+      ([name, value]) => {
+        const parts = value.split('.').map(Number);
+        parts[2] += 1;
+        return [name, parts.join('.')];
+      },
+    ),
+  );
   const files = new Map([
     ['/etc/unraid-version', `version="${version}"\n`],
     [
@@ -40,11 +44,6 @@ function hostFixture(t, version) {
       JSON.stringify({ version: value }),
     ]),
   ]);
-  // Keep drift synthetic even when the test runs on a matching Unraid host.
-  for (const file of Object.keys(
-    compatibilityMatrix.os[version]?.dockerFiles ?? {},
-  ))
-    files.set(file, Buffer.from('fixture Docker Manager drift\n'));
   const arch = Object.getOwnPropertyDescriptor(process, 'arch');
   Object.defineProperty(process, 'arch', { ...arch, value: 'x64' });
   t.after(() => Object.defineProperty(process, 'arch', arch));
@@ -55,12 +54,11 @@ function hostFixture(t, version) {
     if (!files.has(file)) return read(file, ...args);
     return files.get(file);
   });
-  // Synthetic host identity; production policy still calculates all profiles.
-  return {
-    report: resolveCompatibility(version, apiVersion, 'x64', dependencies, {}),
-  };
 }
-async function execution(t) {
+async function execution(
+  t,
+  { coreVersion = bridgePackage.version, dockerAvailable = true } = {},
+) {
   const app = await NestFactory.createApplicationContext(
     GraphQLSchemaBuilderModule,
     { logger: false },
@@ -229,9 +227,9 @@ async function execution(t) {
     if (req.url === '/info')
       res.end(
         JSON.stringify({
-          version: bridgePackage.version,
+          version: coreVersion,
           accepting: true,
-          dockerAvailable: true,
+          dockerAvailable,
           capabilities: [
             'operations.events',
             'system.read',
@@ -295,159 +293,58 @@ const submit =
 const config =
   'input:{name:"fixture",image:"alpine:3",network:"bridge",privileged:false,start:false,autoStart:false,ports:[],mounts:[],environment:[],labels:[]}';
 const mutationCases = [
-  [
-    'system',
-    `prepare(input:{action:"REBOOT"})`,
-    'OS',
-    'UPDATE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'system',
-    `shutdown(${submit})`,
-    'OS',
-    'UPDATE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'system',
-    `reboot(${submit})`,
-    'OS',
-    'UPDATE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'plugins',
-    'prepareUninstall(pluginId:"fixture")',
-    'CONFIG',
-    'DELETE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'plugins',
-    `uninstall(${submit})`,
-    'CONFIG',
-    'DELETE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'array',
-    'prepare(input:{action:"START"})',
-    'ARRAY',
-    'UPDATE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'array',
-    `start(${submit})`,
-    'ARRAY',
-    'UPDATE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'array',
-    `stop(${submit})`,
-    'ARRAY',
-    'UPDATE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
-  ],
+  ['system', 'prepare(input:{action:"REBOOT"})', 'OS', 'UPDATE_ANY'],
+  ['system', `shutdown(${submit})`, 'OS', 'UPDATE_ANY'],
+  ['system', `reboot(${submit})`, 'OS', 'UPDATE_ANY'],
+  ['plugins', 'prepareUninstall(pluginId:"fixture")', 'CONFIG', 'DELETE_ANY'],
+  ['plugins', `uninstall(${submit})`, 'CONFIG', 'DELETE_ANY'],
+  ['array', 'prepare(input:{action:"START"})', 'ARRAY', 'UPDATE_ANY'],
+  ['array', `start(${submit})`, 'ARRAY', 'UPDATE_ANY'],
+  ['array', `stop(${submit})`, 'ARRAY', 'UPDATE_ANY'],
   [
     'array',
     'prepareParity(input:{action:START,correct:false})',
     'ARRAY',
     'UPDATE_ANY',
-    'HOST_COMPATIBILITY_UNVERIFIED',
   ],
   ...['startParity', 'pauseParity', 'resumeParity', 'cancelParity'].map(
-    (name) => [
-      'array',
-      `${name}(${submit})`,
-      'ARRAY',
-      'UPDATE_ANY',
-      'HOST_COMPATIBILITY_UNVERIFIED',
-    ],
+    (name) => ['array', `${name}(${submit})`, 'ARRAY', 'UPDATE_ANY'],
   ),
   [
     'docker',
     'importTemplate(input:{source:XML,xml:"<Container/>"})',
     'DOCKER',
     'CREATE_ANY',
-    'DOCKER_COMPATIBILITY_UNVERIFIED',
   ],
-  [
-    'docker',
-    `prepareInstall(${config})`,
-    'DOCKER',
-    'CREATE_ANY',
-    'DOCKER_COMPATIBILITY_UNVERIFIED',
-  ],
+  ['docker', `prepareInstall(${config})`, 'DOCKER', 'CREATE_ANY'],
   [
     'docker',
     `prepareEdit(containerId:"server:container",${config})`,
     'DOCKER',
     'UPDATE_ANY',
-    'DOCKER_COMPATIBILITY_UNVERIFIED',
   ],
-  [
-    'docker',
-    `install(${submit})`,
-    'DOCKER',
-    'CREATE_ANY',
-    'DOCKER_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'docker',
-    `edit(${submit})`,
-    'DOCKER',
-    'UPDATE_ANY',
-    'DOCKER_COMPATIBILITY_UNVERIFIED',
-  ],
-  [
-    'docker',
-    `restart(${submit})`,
-    'DOCKER',
-    'UPDATE_ANY',
-    'DOCKER_COMPATIBILITY_UNVERIFIED',
-  ],
+  ['docker', `install(${submit})`, 'DOCKER', 'CREATE_ANY'],
+  ['docker', `edit(${submit})`, 'DOCKER', 'UPDATE_ANY'],
+  ['docker', `restart(${submit})`, 'DOCKER', 'UPDATE_ANY'],
 ];
 const mutation = (domain, field) =>
   `mutation { deckBridge { ${domain} { ${field} { id } } } }`;
 
 test(
-  'unknown stable OS real mutation guards reject every write before Unix Core IO',
+  'newer stable hosts preserve mutation authorization before Unix Core IO',
   { concurrency: false },
   async (t) => {
-    for (const version of ['6.12.0', '7.3.20'])
+    for (const version of ['7.3.4', '8.0.0'])
       await t.test(version, { concurrency: false }, async (t) => {
-        const { report } = hostFixture(t, version);
-        assert.equal(report.hostWriteSupported, false);
-        assert.equal(report.verification, 'API_CONTRACT_ONLY');
+        hostFixture(t, version);
         const { run, requests } = await execution(t);
-        for (const [domain, field, resource, action, code] of mutationCases) {
+        for (const [domain, field] of mutationCases) {
           const query = mutation(domain, field);
-          const result = await run(query, {
-            id: 'authorized-writer',
-            resource,
-            action,
-          });
-          assert.equal(
-            result.errors?.length,
-            1,
-            `${domain}.${field}: ${JSON.stringify(result.errors)}`,
-          );
-          assert.equal(
-            result.errors[0].extensions.code,
-            code,
-            `${domain}.${field}`,
-          );
-          assert.equal(result.data, null);
           const anonymous = await run(query, undefined);
           assert.equal(anonymous.errors?.length, 1);
           assert.equal(anonymous.errors[0].extensions.code, 'UNAUTHENTICATED');
-          if (domain !== 'docker') {
-            const denied = await run(query, user('DOCKER'));
-            assert.match(denied.errors?.[0]?.message ?? '', /forbidden/i);
-          }
+          const denied = await run(query, user('ME'));
+          assert.match(denied.errors?.[0]?.message ?? '', /forbidden/i);
         }
         assert.deepEqual(requests, []);
       });
@@ -455,10 +352,10 @@ test(
 );
 
 test(
-  'unknown OS GraphQL info exposes only read/event capabilities from real Core response',
+  'newer OS and API forward exactly the capabilities declared by Core',
   { concurrency: false },
   async (t) => {
-    hostFixture(t, '7.3.20');
+    hostFixture(t, '7.3.4');
     const { run, requests } = await execution(t);
     const result = await run(
       '{ deckBridge { info { capabilities compatibility } } }',
@@ -470,15 +367,25 @@ test(
       'system.read',
       'plugins.read',
       'array.read',
+      'system.preview',
+      'system.execute',
+      'plugins.preview',
+      'plugins.execute',
+      'plugins.uninstall',
+      'array.preview',
+      'array.execute',
+      'docker.install',
+      'docker.restart',
+      'docker.read',
     ]);
-    const report = result.data.deckBridge.info.compatibility;
-    assert.equal(Object.hasOwn(report, 'storageProfile'), false);
-    assert.equal(report.dockerProfile, 'UNVERIFIED');
-    assert.equal(report.hostWriteSupported, false);
-    assert.equal(report.dockerWriteSupported, false);
-    assert.equal(report.osEvidence, 'UNVERIFIED_OS_PROFILE');
-    assert.equal(report.verification, 'API_CONTRACT_ONLY');
-    assert.deepEqual(report.reasons, ['OS_PROFILE_UNVERIFIED']);
+    assert.equal(
+      result.data.deckBridge.info.compatibility.hostWriteSupported,
+      true,
+    );
+    assert.equal(
+      result.data.deckBridge.info.compatibility.dockerWriteSupported,
+      true,
+    );
     assert.deepEqual(requests, [
       { method: 'GET', url: '/info', actor: 'host-reader' },
     ]);
@@ -486,12 +393,10 @@ test(
 );
 
 test(
-  'audited OS Docker drift preserves host operations and the existing restart exception',
+  'newer stable OS and API retain supported host and Docker writes',
   { concurrency: false },
   async (t) => {
-    const { report } = hostFixture(t, '7.2.3');
-    assert.equal(report.hostWriteSupported, true);
-    assert.equal(report.dockerWriteSupported, false);
+    hostFixture(t, '8.0.0');
     const { run, requests } = await execution(t);
     for (const [domain, field, resource] of [
       ['system', 'prepare(input:{action:"REBOOT"})', 'OS'],
@@ -509,15 +414,12 @@ test(
         'accepted-operation',
       );
     }
-    const denied = await run(mutation('docker', `install(${submit})`), {
+    const unavailable = await run(mutation('docker', `install(${submit})`), {
       id: 'authorized-writer',
       resource: 'DOCKER',
       action: 'CREATE_ANY',
     });
-    assert.equal(
-      denied.errors?.[0]?.extensions.code,
-      'DOCKER_COMPATIBILITY_UNVERIFIED',
-    );
+    assert.equal(unavailable.errors?.[0]?.extensions.code, 'NOT_FOUND');
     assert.deepEqual(
       requests.map(({ url }) => url),
       [
@@ -527,7 +429,32 @@ test(
         '/system/submit/reboot',
         '/info',
         '/docker/submit/restart',
+        '/info',
+        '/docker/submit/install',
       ],
     );
   },
 );
+
+for (const [coreState, expected] of [
+  [{ dockerAvailable: false }, 'DOCKER_UNAVAILABLE'],
+  [{ coreVersion: '0.0.0' }, 'CORE_VERSION_MISMATCH'],
+])
+  test(
+    `newer hosts still reject Docker writes for ${expected}`,
+    { concurrency: false },
+    async (t) => {
+      hostFixture(t, '7.3.4');
+      const { run, requests } = await execution(t, coreState);
+      const result = await run(mutation('docker', `restart(${submit})`), {
+        id: 'authorized-writer',
+        resource: 'DOCKER',
+        action: 'UPDATE_ANY',
+      });
+      assert.equal(result.errors?.[0]?.extensions.code, expected);
+      assert.deepEqual(
+        requests.map(({ url }) => url),
+        ['/info'],
+      );
+    },
+  );

@@ -44,6 +44,7 @@ async function fixture(t) {
     auth: true,
     infoError: false,
     schemaError: false,
+    validationErrors: null,
     blocked: false,
     oversized: false,
     queries: 0,
@@ -106,12 +107,25 @@ async function fixture(t) {
     let body = '';
     for await (const chunk of req) body += chunk;
     const { query } = JSON.parse(body);
+    if (query.includes('__schema') || query.includes('__type(')) {
+      res.writeHead(400);
+      return res.end(
+        JSON.stringify({
+          errors: [
+            {
+              message: 'GraphQL introspection is not allowed',
+              extensions: { code: 'INTROSPECTION_DISABLED' },
+            },
+          ],
+        }),
+      );
+    }
     res.setHeader('content-type', 'application/json');
     if (state.oversized) return res.end('x'.repeat(300000));
     if (
       !state.auth ||
       state.schemaError ||
-      (state.infoError && !query.includes('__schema'))
+      (state.infoError && query.includes('deckBridge'))
     )
       return res.end(
         JSON.stringify({
@@ -123,18 +137,25 @@ async function fixture(t) {
           ],
         }),
       );
-    const data = query.includes('__schema')
-      ? {
-          me: { name: 'root' },
-          __schema: {
-            queryType: {
-              fields: (state.loaded ? ['deckBridge', 'me'] : ['me']).map(
-                (name) => ({ name }),
-              ),
+    if (query.includes('deckBridge') && state.validationErrors) {
+      res.writeHead(400);
+      return res.end(JSON.stringify({ errors: state.validationErrors }));
+    }
+    if (query.includes('deckBridge') && !state.loaded) {
+      res.writeHead(400);
+      return res.end(
+        JSON.stringify({
+          errors: [
+            {
+              message: 'Cannot query field "deckBridge" on type "Query".',
+              extensions: { code: 'GRAPHQL_VALIDATION_FAILED' },
             },
-          },
-        }
-      : {
+          ],
+        }),
+      );
+    }
+    const data = query.includes('deckBridge')
+      ? {
           deckBridge: {
             info: {
               version: state.version,
@@ -142,7 +163,8 @@ async function fixture(t) {
               compatible: state.compatible,
             },
           },
-        };
+        }
+      : { me: { name: 'root' } };
     state.onQuery?.(query);
     res.end(JSON.stringify({ data }));
   });
@@ -194,7 +216,7 @@ test('loaded version is proven independently of Core or Docker availability', as
   assert.equal(legacy.expectedVersion, '2026.10.29a');
 });
 
-test('schema proof distinguishes not loaded yet, old loaded code, and post-reload target', async (t) => {
+test('authenticated queries distinguish missing, old and current adapters with introspection disabled', async (t) => {
   const f = await fixture(t);
   f.state.loaded = false;
   assert.deepEqual(await inspectRuntime(f.options), {
@@ -239,6 +261,37 @@ test('auth, unrelated GraphQL errors, and network errors never prove absence', a
     ).adapter,
     'unknown',
   );
+});
+
+test('validation and permission failures cannot masquerade as a missing Bridge field', async (t) => {
+  const f = await fixture(t);
+  const missing = {
+    message: 'Cannot query field "deckBridge" on type "Query".',
+    extensions: { code: 'GRAPHQL_VALIDATION_FAILED' },
+  };
+  for (const errors of [
+    [{ ...missing, extensions: { code: 'FORBIDDEN' } }],
+    [
+      {
+        ...missing,
+        message: 'Cannot query field "info" on type "DeckBridgeQueries".',
+      },
+    ],
+    [
+      missing,
+      { message: 'Permission denied', extensions: { code: 'FORBIDDEN' } },
+    ],
+    [{ message: missing.message }],
+  ]) {
+    f.state.validationErrors = errors;
+    const result = await inspectRuntime(f.options);
+    assert.equal(result.ready, false);
+    assert.equal(result.adapter, 'unknown');
+  }
+  f.state.validationErrors = null;
+  f.state.loaded = false;
+  f.state.auth = false;
+  assert.equal((await inspectRuntime(f.options)).adapter, 'unknown');
 });
 
 test('invalid expected metadata cannot authorize reload or health', async (t) => {

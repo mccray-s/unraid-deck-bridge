@@ -15,7 +15,6 @@ import {
 import { AuthZGuard } from 'nest-authz';
 import { graphql } from 'graphql';
 import * as api from '../dist/index.js';
-import { filterCapabilities } from '../dist/check-host.js';
 
 async function harness(
   t,
@@ -472,26 +471,6 @@ test('optional template lookup limitation remains nonblocking across eligibility
   );
   assert.equal(requests.at(-1).body.adoptTemplate, false);
 });
-test('engine capability follows existing host and Docker write compatibility', () => {
-  assert.deepEqual(
-    filterCapabilities({ hostWriteSupported: false }, ['docker.engineEdit']),
-    [],
-  );
-  assert.deepEqual(
-    filterCapabilities(
-      { hostWriteSupported: true, dockerWriteSupported: false },
-      ['docker.engineEdit'],
-    ),
-    [],
-  );
-  assert.deepEqual(
-    filterCapabilities(
-      { hostWriteSupported: true, dockerWriteSupported: true },
-      ['docker.engineEdit'],
-    ),
-    ['docker.engineEdit'],
-  );
-});
 
 test('OpenAPI and GraphQL freeze sources, limitations, nullability and new operation kind', async (t) => {
   const d = JSON.parse(
@@ -830,30 +809,6 @@ test('protocol gate never relabels transport or business errors as upgrade', asy
   assert.deepEqual(
     requests.map((r) => r.path),
     ['/info'],
-  );
-});
-test('new capabilities obey host filters while the read protocol marker survives', () => {
-  const capabilities = [
-    'docker.templateManagementRead',
-    'docker.templateFieldsRead',
-    'docker.templateFields',
-    'docker.templateAdopt',
-    'docker.templateReplace',
-  ];
-  for (const host of [
-    { hostWriteSupported: false },
-    { hostWriteSupported: true, dockerWriteSupported: false },
-  ])
-    assert.deepEqual(filterCapabilities(host, capabilities), [
-      'docker.templateManagementRead',
-      'docker.templateFieldsRead',
-    ]);
-  assert.deepEqual(
-    filterCapabilities(
-      { hostWriteSupported: true, dockerWriteSupported: true },
-      capabilities,
-    ),
-    capabilities,
   );
 });
 test('template management remains closed to client kind/source/overwrite switches', async (t) => {

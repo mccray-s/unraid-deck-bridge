@@ -106,7 +106,7 @@ export function releaseFixture(t) {
     );
   write(
     path.join(root, 'CHANGELOG.md'),
-    fs.readFileSync(path.join(repo, 'CHANGELOG.md')),
+    '###2026.10.29a\n- Current fixture release.\n\n###2026.10.29\n- Previous fixture release.\n\n###2026.10.28\n- Initial fixture release.\n',
   );
   setReleaseVersion(root, '2026.10.29a');
   fs.cpSync(path.join(repo, 'packaging'), path.join(root, 'packaging'), {

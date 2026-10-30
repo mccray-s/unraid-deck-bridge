@@ -1,3 +1,7 @@
+###2026.10.30
+- Fix: Allow newer Unraid OS and API releases above the minimum supported versions.
+- Fix: Keep management capabilities available on newer hosts.
+
 ###2026.10.29a
 - Change: Use one date-based release identity across the native plugin, Bridge, Core, diagnostics, and release artifacts.
 - Fix: Activate upgrades from legacy Bridge 0.1.1 through the normal native plugin update without removing settings or task journals.

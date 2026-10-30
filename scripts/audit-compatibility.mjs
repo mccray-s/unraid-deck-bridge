@@ -271,11 +271,9 @@ Reads pinned Git objects; partial clones may fetch missing objects. Never execut
   );
   assertApproved(Object.keys(previous.api).length, 'No approved API pins');
   const result = {
-    format: 1,
-    minimumOSVersion: previous.minimumOSVersion,
+    ...previous,
     api: {},
     os: {},
-    liveVerification: previous.liveVerification,
   };
   for (const [version, approved] of Object.entries(previous.api)) {
     result.api[version] = auditAPI(
@@ -294,7 +292,7 @@ Reads pinned Git objects; partial clones may fetch missing objects. Never execut
     JSON.stringify({
       osVersions: Object.keys(result.os).length,
       apiVersions: Object.keys(result.api).length,
-      routingCombinations:
+      auditedCombinations:
         Object.keys(result.os).length * Object.keys(result.api).length,
     }),
   );

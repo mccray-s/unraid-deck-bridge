@@ -2,7 +2,11 @@
 
 Bridge extends the official `/graphql` endpoint with `deckBridge` query and mutation namespaces and separate root subscription fields. Use the official API authentication and resource permissions. It does not replace the official `docker` API or provide a separate client authentication scheme.
 
-The complete extension types, inputs, enums, and nullability are in [`contracts/schema.graphql`](../contracts/schema.graphql). The deployed official API's merged schema is authoritative for client code generation; the snapshot contains only Bridge fields. Host support and write restrictions are defined in [`contracts/compatibility.json`](../contracts/compatibility.json).
+The complete extension types, inputs, enums, and nullability are in [`contracts/schema.graphql`](../contracts/schema.graphql). The deployed official API's merged schema is authoritative for client code generation; the snapshot contains only Bridge fields. Minimum host/runtime requirements and template dialect boundaries are defined in [`contracts/compatibility.json`](../contracts/compatibility.json).
+
+OS, API and shared runtime dependency versions have lower bounds only. Stable newer releases, including newer majors, are not rejected solely by version number. The historical `api`/`os` source snapshots are audit evidence, not admission or write-capability allowlists. Template network dialects use minimum-version boundaries so existing classic hosts retain their serialization semantics while newer hosts receive the endpoint dialect. Missing/older dependencies, actual interface or input failures, official permission checks, and exact bundled Bridge/Core version matching still govern each operation.
+
+Activation verifies the authenticated `me` query and the ordinary Bridge `info` query without requiring GraphQL introspection. Only a specifically validated missing `deckBridge` root field establishes that the API has not loaded Bridge; authentication, permission and unrelated validation errors remain unknown.
 
 ## Permissions and availability
 

@@ -10,7 +10,7 @@ import {
   DeckBridgeRuntime,
 } from './runtime.types.js';
 import 'reflect-metadata';
-import { assertSupportedHost, filterCapabilities } from './check-host.js';
+import { assertSupportedHost } from './check-host.js';
 import { Type } from 'class-transformer';
 import {
   IsInt,
@@ -897,9 +897,7 @@ export class DeckBridgeService {
         coreOnline: true,
         compatible,
         dockerAvailable: core.dockerAvailable,
-        capabilities: compatible
-          ? filterCapabilities(compatibility, core.capabilities)
-          : [],
+        capabilities: compatible ? core.capabilities : [],
         reason: !compatible
           ? 'CORE_VERSION_MISMATCH'
           : !core.accepting
@@ -922,8 +920,8 @@ export class DeckBridgeService {
     }
   }
   async updateAccess(context: any): Promise<DeckBridgeDockerUpdateAccess> {
-    const actor = principal(context),
-      host = assertSupportedHost();
+    const actor = principal(context);
+    assertSupportedHost();
     try {
       const access = await callUpdateCore(actor, '/docker/update-access');
       if (
@@ -940,7 +938,7 @@ export class DeckBridgeService {
         principalId: actor,
         coreOnline: access.coreOnline,
         dockerAvailable: access.dockerAvailable,
-        capabilities: filterCapabilities(host, access.capabilities),
+        capabilities: access.capabilities,
         reason:
           typeof access.reason === 'string' &&
           /^[A-Z][A-Z0-9_]{1,63}$/.test(access.reason)
@@ -973,15 +971,7 @@ export class DeckBridgeService {
     return callCore(actor, path);
   }
   async write(context: any, path: string, input: unknown, safeUpdate = false) {
-    const host = assertSupportedHost();
-    if (
-      host?.hostWriteSupported === false ||
-      (host?.dockerWriteSupported === false && !path.endsWith('/restart'))
-    )
-      throw new GraphQLError(
-        'Docker Manager implementation is outside the audited profile',
-        { extensions: { code: 'DOCKER_COMPATIBILITY_UNVERIFIED' } },
-      );
+    assertSupportedHost();
     const actor = principal(context);
     const core = await (safeUpdate
       ? callUpdateCore(actor, '/info')
@@ -1028,16 +1018,8 @@ export class DeckBridgeService {
       throw new GraphQLError('Invalid operation ID', {
         extensions: { code: 'INVALID_INPUT' },
       });
-    const actor = principal(context),
-      host = assertSupportedHost();
-    if (
-      host?.hostWriteSupported === false ||
-      host?.dockerWriteSupported === false
-    )
-      throw new GraphQLError(
-        'Docker Manager implementation is outside the audited profile',
-        { extensions: { code: 'DOCKER_COMPATIBILITY_UNVERIFIED' } },
-      );
+    const actor = principal(context);
+    assertSupportedHost();
     // Cancellation must not wait for the availability preflight.
     const input = { operationId, coreVersion: bridgeVersion },
       path = `/docker/cancel/${action}`;
@@ -1581,12 +1563,7 @@ export function parityPreview(input: DeckBridgeParityPreviewInput) {
   return { action: `PARITY_${input.action}` };
 }
 async function hostWrite(context: any, path: string, input: unknown) {
-  const host = assertSupportedHost();
-  if (host?.hostWriteSupported === false)
-    throw new GraphQLError(
-      'Host operations are outside the audited OS profile',
-      { extensions: { code: 'HOST_COMPATIBILITY_UNVERIFIED' } },
-    );
+  assertSupportedHost();
   const actor = principal(context),
     core = await callCore(actor, '/info');
   if (core.version !== bridgeVersion)

@@ -1,6 +1,26 @@
 {
   "format": 1,
   "minimumOSVersion": "6.12.0",
+  "minimumAPIVersion": "4.25.3",
+  "minimumDependencies": {
+    "@nestjs/common": "11.1.6",
+    "@nestjs/core": "11.1.6",
+    "@nestjs/graphql": "13.1.0",
+    "graphql": "16.11.0",
+    "class-validator": "0.14.2",
+    "nest-authz": "2.17.0",
+    "class-transformer": "0.5.1"
+  },
+  "templateProfiles": [
+    {
+      "minimumOSVersion": "6.12.0",
+      "templateProfile": "DOCKERMAN_CLASSIC_NETWORK"
+    },
+    {
+      "minimumOSVersion": "7.2.5",
+      "templateProfile": "DOCKERMAN_ENDPOINT_NETWORK"
+    }
+  ],
   "api": {
     "4.25.3": {
       "commit": "34075e44c551a8fec3d294e1ed127699f1e560f2",

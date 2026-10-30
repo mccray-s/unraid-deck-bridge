@@ -17,11 +17,7 @@ import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { graphql, parse, validate } from 'graphql';
 import * as api from '../dist/index.js';
-import {
-  compatibilityMatrix,
-  resolveCompatibility,
-  filterCapabilities,
-} from '../dist/check-host.js';
+import { compatibilityMatrix } from '../dist/check-host.js';
 
 // Exercise the official guard logic with only metadata and request access replaced.
 const require = createRequire(import.meta.url);
@@ -951,118 +947,73 @@ test('mismatched Core cannot advertise enhanced image-update capability', async 
   assert.equal(out.data.deckBridge.info.reason, 'CORE_VERSION_MISMATCH');
 });
 
-test('audited host capability policy strips enhanced Docker writes on Docker drift and unknown OS', () => {
-  const dependencies = compatibilityMatrix.api['4.36.1'].dependencies,
-    known = compatibilityMatrix.os['7.3.2'];
-  const capabilities = [
-    'operations.events',
-    'docker.read',
-    'docker.restart',
-    'docker.edit',
-    'docker.fullConfiguration',
-    'docker.imageUpdate',
-    'docker.configurationFeedback',
-  ];
-  const matching = resolveCompatibility(
-    '7.3.2',
-    '4.36.1',
-    'x64',
-    dependencies,
-    known.dockerFiles,
-  );
-  assert.deepEqual(filterCapabilities(matching, capabilities), capabilities);
-  const drift = resolveCompatibility(
-    '7.3.2',
-    '4.36.1',
-    'x64',
-    dependencies,
-    {},
-  );
-  assert.equal(drift.dockerWriteSupported, false);
-  assert.deepEqual(filterCapabilities(drift, capabilities), [
-    'operations.events',
-    'docker.read',
-    'docker.restart',
-  ]);
-  const unknown = resolveCompatibility(
-    '7.3.20',
-    '4.36.1',
-    'x64',
-    dependencies,
-    known.dockerFiles,
-  );
-  assert.equal(unknown.hostWriteSupported, false);
-  assert.deepEqual(filterCapabilities(unknown, capabilities), [
-    'operations.events',
-  ]);
-  assert.deepEqual(
-    filterCapabilities(matching, ['docker.edit', 'docker.fullConfiguration']),
-    ['docker.edit', 'docker.fullConfiguration'],
-  );
-});
-
-for (const [osVersion, expected] of [
-  ['7.3.2', ['operations.events', 'docker.read', 'docker.restart']],
-  ['7.3.20', ['operations.events']],
+for (const [osVersion, apiVersion] of [
+  ['7.3.4', '4.38.0'],
+  ['8.0.0', '5.0.0'],
 ])
-  test(
-    'real GraphQL info strips enhanced Docker writes for unaudited host ' +
-      osVersion,
-    async (t) => {
-      const capabilities = [
-        'operations.events',
-        'docker.read',
-        'docker.restart',
-        'docker.edit',
-        'docker.fullConfiguration',
-        'docker.imageUpdate',
-        'docker.configurationFeedback',
-      ];
-      const { run } = await harness(t, { capabilities });
-      // Supply only local host-file fixtures to production assertSupportedHost.
-      // Known OS gets mismatched Docker files; unknown OS gets no write profile.
-      const arch = Object.getOwnPropertyDescriptor(process, 'arch');
-      Object.defineProperty(process, 'arch', { ...arch, value: 'x64' });
-      t.after(() => Object.defineProperty(process, 'arch', arch));
-      const files = new Map([
-        ['/etc/unraid-version', `version="${osVersion}"\n`],
-        [
-          '/usr/local/unraid-api/package.json',
-          JSON.stringify({ version: '4.36.1' }),
-        ],
-      ]);
-      for (const [name, version] of Object.entries(
-        compatibilityMatrix.api['4.36.1'].dependencies,
-      )) {
-        files.set(
-          path.join('/usr/local/unraid-api/node_modules', name, 'package.json'),
-          JSON.stringify({ version }),
-        );
-      }
-      for (const file of Object.keys(
-        compatibilityMatrix.os['7.3.2'].dockerFiles,
-      ))
-        files.set(file, Buffer.from('unaudited Docker Manager fixture'));
-      const exists = fs.existsSync.bind(fs),
-        read = fs.readFileSync.bind(fs);
-      t.mock.method(
-        fs,
-        'existsSync',
-        (file) => files.has(file) || exists(file),
+  test(`real GraphQL info preserves Core capabilities and image-update writes on OS ${osVersion} API ${apiVersion}`, async (t) => {
+    const capabilities = [
+      'operations.events',
+      'docker.read',
+      'docker.restart',
+      'docker.edit',
+      'docker.fullConfiguration',
+      'docker.imageUpdate',
+      'docker.configurationFeedback',
+      'docker.templateManagementRead',
+    ];
+    const { run } = await harness(t, { capabilities });
+    // Exercise production host admission using only isolated host metadata.
+    const arch = Object.getOwnPropertyDescriptor(process, 'arch');
+    Object.defineProperty(process, 'arch', { ...arch, value: 'x64' });
+    t.after(() => Object.defineProperty(process, 'arch', arch));
+    const files = new Map([
+      ['/etc/unraid-version', `version="${osVersion}"\n`],
+      [
+        '/usr/local/unraid-api/package.json',
+        JSON.stringify({ version: apiVersion }),
+      ],
+    ]);
+    for (const [name, version] of Object.entries(
+      compatibilityMatrix.minimumDependencies,
+    )) {
+      files.set(
+        path.join('/usr/local/unraid-api/node_modules', name, 'package.json'),
+        JSON.stringify({
+          version: version.replace(/\d+$/, (patch) =>
+            String(Number(patch) + 1),
+          ),
+        }),
       );
-      t.mock.method(fs, 'readFileSync', (file, ...args) =>
-        files.has(file) ? files.get(file) : read(file, ...args),
-      );
-      const out = await run(
-        '{deckBridge{info{compatible capabilities compatibility}}}',
-        subject('ME'),
-      );
-      assert.equal(out.errors, undefined);
-      assert.equal(out.data.deckBridge.info.compatible, true);
-      assert.deepEqual(out.data.deckBridge.info.capabilities, expected);
-      assert.equal(
-        out.data.deckBridge.info.compatibility.dockerWriteSupported,
-        false,
-      );
-    },
-  );
+    }
+    const exists = fs.existsSync.bind(fs),
+      read = fs.readFileSync.bind(fs);
+    t.mock.method(fs, 'existsSync', (file) => files.has(file) || exists(file));
+    t.mock.method(fs, 'readFileSync', (file, ...args) =>
+      files.has(file) ? files.get(file) : read(file, ...args),
+    );
+    const out = await run(
+      '{deckBridge{info{compatible capabilities compatibility}}}',
+      subject('ME'),
+    );
+    assert.equal(out.errors, undefined);
+    assert.equal(out.data.deckBridge.info.compatible, true);
+    assert.deepEqual(out.data.deckBridge.info.capabilities, capabilities);
+    assert.equal(
+      out.data.deckBridge.info.compatibility.dockerWriteSupported,
+      true,
+    );
+    const prepared = await run(prepareQuery, subject('DOCKER', 'UPDATE_ANY'), {
+      input: configuration,
+    });
+    assert.equal(prepared.errors, undefined);
+    assert.equal(prepared.data.deckBridge.docker.prepareEdit.updateImage, true);
+    assert.equal(
+      prepared.data.deckBridge.docker.prepareEdit.source,
+      'UNRAID_TEMPLATE',
+    );
+    const installed = await run(installQuery, subject('DOCKER', 'CREATE_ANY'));
+    assert.equal(installed.errors, undefined);
+    assert.equal(installed.data.deckBridge.docker.install.kind, 'INSTALL');
+    assert.equal(installed.data.deckBridge.docker.install.status, 'QUEUED');
+  });

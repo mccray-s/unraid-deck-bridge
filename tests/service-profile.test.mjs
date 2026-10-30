@@ -4,7 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { rewriteHostPaths } from './helpers/lifecycle.mjs';
+import {
+  rewriteHostPaths,
+  stageHostCompatibility,
+} from './helpers/lifecycle.mjs';
 const repo = new URL('../', import.meta.url);
 function fixture(t) {
   const root = fs.realpathSync(
@@ -17,7 +20,7 @@ function write(file, value, mode = 0o600) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, value, { mode });
 }
-test('manager emits only a verified known template profile without disabling other domains', (t) => {
+test('manager emits only supported known template dialects without an audit-source flag', (t) => {
   const root = fixture(t),
     version = path.join(root, 'unraid-version'),
     file = path.join(root, 'manager.mjs');
@@ -59,6 +62,10 @@ test('manager emits only a verified known template profile without disabling oth
     ],
     [{ dockerWriteSupported: true, templateProfile: 'UNKNOWN' }, ''],
     [{ dockerWriteSupported: true }, ''],
+    [{ dockerWriteSupported: true, templateProfile: null }, ''],
+    [{ dockerWriteSupported: true, templateProfile: false }, ''],
+    [{ dockerWriteSupported: true, templateProfile: 1 }, ''],
+    [{ templateProfile: 'DOCKERMAN_ENDPOINT_NETWORK' }, ''],
     [{ fail: true }, ''],
   ]) {
     const result = spawnSync(process.execPath, [file, 'template-profile'], {
@@ -135,6 +142,32 @@ test('supervisor stops instead of restarting Core after registration disappears'
     'started\n',
   );
 });
+for (const [osVersion, apiVersion, expected] of [
+  ['7.2.4', '4.25.3', 'DOCKERMAN_CLASSIC_NETWORK'],
+  ['8.0.0', '5.0.0', 'DOCKERMAN_ENDPOINT_NETWORK'],
+]) {
+  test(`supervisor hands the real minimum-selected ${expected} dialect to Core`, (t) => {
+    const f = supervisorFixture(t);
+    stageHostCompatibility(f.root, {
+      managerRoot: f.release,
+      osVersion,
+      apiVersion,
+    });
+    write(
+      path.join(f.release, 'deck-bridge-core'),
+      '#!/bin/sh\nprintf "%s\\n" "$@" > "$CALLS"\nrm -f "$REGISTERED"\nexit 1\n',
+      0o755,
+    );
+    fs.mkdirSync(path.join(f.root, 'run'));
+    const result = f.run('supervise');
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const args = fs
+      .readFileSync(path.join(f.root, 'calls'), 'utf8')
+      .trim()
+      .split('\n');
+    assert.deepEqual(args.slice(-2), ['--template-profile', expected]);
+  });
+}
 test('rc stop reports damaged runtime instead of pretending Core is stopped', (t) => {
   const f = supervisorFixture(t);
   const result = f.run('stop');

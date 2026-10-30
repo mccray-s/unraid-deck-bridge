@@ -262,7 +262,7 @@ function request(options, socketPath, route, headers = {}, body) {
     req.end();
   });
 }
-async function graphql(options, credential, query) {
+async function graphql(options, credential, query, allowMissingBridge = false) {
   const response = await request(
     options,
     options.apiSocket,
@@ -270,14 +270,26 @@ async function graphql(options, credential, query) {
     { 'content-type': 'application/json', 'x-local-session': credential },
     JSON.stringify({ query }),
   );
-  if (response.status !== 200) throw failure('API_AUTH_UNKNOWN');
+  if (![200, 400].includes(response.status)) throw failure('API_AUTH_UNKNOWN');
   let result;
   try {
     result = JSON.parse(response.body);
   } catch {
     throw failure('API_RESPONSE_UNKNOWN');
   }
-  if (result.errors?.length || !result.data) throw failure('API_AUTH_UNKNOWN');
+  // Only this root-field validation failure proves absence; other errors stay unknown.
+  if (
+    allowMissingBridge &&
+    Array.isArray(result.errors) &&
+    result.errors.length === 1 &&
+    result.errors[0]?.extensions?.code === 'GRAPHQL_VALIDATION_FAILED' &&
+    /^Cannot query field "deckBridge" on type "[_A-Za-z][_0-9A-Za-z]*"\.(?: Did you mean .+\?)?$/.test(
+      result.errors[0]?.message ?? '',
+    )
+  )
+    return null;
+  if (response.status !== 200 || result.errors?.length || !result.data)
+    throw failure('API_AUTH_UNKNOWN');
   return result.data;
 }
 export async function inspectCore(input = {}) {
@@ -315,22 +327,22 @@ export async function inspectRuntime(input = {}) {
     check(options.valid);
     if (![200, 302, 404].includes(web.status))
       throw failure('EMHTTP_UNAVAILABLE');
-    const schema = await graphql(
-      options,
-      credential,
-      '{ me { name } __schema { queryType { fields { name } } } }',
-    );
+    // Ordinary queries also work when the host disables schema introspection.
+    const user = await graphql(options, credential, '{ me { name } }');
     check(options.valid);
-    if (typeof schema.me?.name !== 'string') throw failure('API_AUTH_UNKNOWN');
-    const fields = schema.__schema?.queryType?.fields;
-    if (
-      !Array.isArray(fields) ||
-      !fields.every((field) => typeof field.name === 'string')
-    )
-      throw failure('API_SCHEMA_UNKNOWN');
+    if (typeof user.me?.name !== 'string') throw failure('API_AUTH_UNKNOWN');
     if (snapshot(options).identity !== identity)
       throw failure('API_PROCESS_CHANGED');
-    if (!fields.some((field) => field.name === 'deckBridge'))
+    const data = await graphql(
+      options,
+      credential,
+      '{ deckBridge { info { version coreOnline compatible } } }',
+      true,
+    );
+    check(options.valid);
+    if (snapshot(options).identity !== identity)
+      throw failure('API_PROCESS_CHANGED');
+    if (data === null)
       return {
         ready: true,
         identity,
@@ -338,14 +350,6 @@ export async function inspectRuntime(input = {}) {
         adapter: 'missing',
         code: 'ADAPTER_MISSING',
       };
-    const data = await graphql(
-      options,
-      credential,
-      '{ deckBridge { info { version coreOnline compatible } } }',
-    );
-    check(options.valid);
-    if (snapshot(options).identity !== identity)
-      throw failure('API_PROCESS_CHANGED');
     const info = data.deckBridge?.info;
     if (
       !isObservedReleaseVersion(info?.version) ||
@@ -376,7 +380,6 @@ export async function inspectRuntime(input = {}) {
       'EMHTTP_UNAVAILABLE',
       'API_AUTH_UNKNOWN',
       'API_RESPONSE_UNKNOWN',
-      'API_SCHEMA_UNKNOWN',
       'ADAPTER_UNKNOWN',
     ];
     return {

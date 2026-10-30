@@ -7,7 +7,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
-import { createHash } from 'node:crypto';
 import ts from 'typescript';
 import { ForbiddenException, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
@@ -18,11 +17,7 @@ import {
 } from '@nestjs/graphql';
 import { graphql, subscribe, parse, validate } from 'graphql';
 import * as api from '../dist/index.js';
-import {
-  filterCapabilities,
-  compatibilityMatrix,
-  resolveCompatibility,
-} from '../dist/check-host.js';
+import { compatibilityMatrix } from '../dist/check-host.js';
 
 // Run the pinned official authorization guard; only its external App accessors
 // are replaced. Schema, resolvers, principal extraction and socket client are real.
@@ -676,56 +671,66 @@ test('Docker READ-only checks and recovery use current reader identity, never ME
   }
 });
 
-// The audited fixed commits share this exact official guard; bind each behavioral
-// run to its matrix fingerprint rather than assuming nearby releases are equivalent.
-for (const version of ['4.37.4', '4.37.5', '4.37.6'])
-  test(`${version} official guard rejects wrong permissions and anonymous callers before all update Core IO`, async (t) => {
-    const profile = compatibilityMatrix.api[version];
-    assert.equal(
-      profile.sources['api/src/unraid-api/auth/authorization.guard.ts'],
-      createHash('sha256').update(officialGuard).digest('hex'),
-    );
-    const report = resolveCompatibility(
-      '7.3.2',
-      version,
-      'x64',
-      profile.dependencies,
-      compatibilityMatrix.os['7.3.2'].dockerFiles,
-    );
-    assert.equal(report.apiProfile, 'EXPLICIT_NAMESPACE');
-    const { run, stream, requests } = await harness(t);
-    for (const query of [accessQuery, readQuery, batchQuery, startMutation])
-      for (const identity of [
-        null,
-        user('UPDATE_ANY'),
-        user('CREATE_ANY'),
-        user('READ_ANY', 'ME'),
-      ])
-        assert.ok((await run(query, identity)).errors?.length);
-    for (const query of [prepareMutation, batchMutation])
-      for (const identity of [
-        null,
-        user(),
-        user('CREATE_ANY'),
-        user('UPDATE_ANY', 'ME'),
-      ])
-        assert.ok(
-          (
-            await run(query, identity, {
-              input:
-                query === prepareMutation
-                  ? target
-                  : { requestId: 'batch-request', targets: [target] },
-            })
-          ).errors?.length,
-        );
-    for (const query of [checkSubscription, batchSubscription])
-      for (const identity of [null, user('UPDATE_ANY'), user('READ_ANY', 'ME')])
-        assert.ok((await stream(query, identity)).errors?.length);
-    assert.equal(requests.length, 0);
-  });
+test('official guard rejects wrong permissions and anonymous callers before all update Core IO', async (t) => {
+  const { run, stream, requests } = await harness(t);
+  for (const query of [accessQuery, readQuery, batchQuery, startMutation])
+    for (const identity of [
+      null,
+      user('UPDATE_ANY'),
+      user('CREATE_ANY'),
+      user('READ_ANY', 'ME'),
+    ])
+      assert.ok((await run(query, identity)).errors?.length);
+  for (const query of [prepareMutation, batchMutation])
+    for (const identity of [
+      null,
+      user(),
+      user('CREATE_ANY'),
+      user('UPDATE_ANY', 'ME'),
+    ])
+      assert.ok(
+        (
+          await run(query, identity, {
+            input:
+              query === prepareMutation
+                ? target
+                : { requestId: 'batch-request', targets: [target] },
+          })
+        ).errors?.length,
+      );
+  for (const query of [checkSubscription, batchSubscription])
+    for (const identity of [null, user('UPDATE_ANY'), user('READ_ANY', 'ME')])
+      assert.ok((await stream(query, identity)).errors?.length);
+  assert.equal(requests.length, 0);
+});
 
-test('UPDATE-only prepares frozen server candidate and submits ordered batch without caller mutation', async (t) => {
+test('newer OS and API allow UPDATE-only frozen candidate preparation and ordered batch submission', async (t) => {
+  const arch = Object.getOwnPropertyDescriptor(process, 'arch');
+  Object.defineProperty(process, 'arch', { ...arch, value: 'x64' });
+  t.after(() => Object.defineProperty(process, 'arch', arch));
+  const files = new Map([
+    ['/etc/unraid-version', 'version="7.3.4"\n'],
+    [
+      '/usr/local/unraid-api/package.json',
+      JSON.stringify({ version: '5.0.0' }),
+    ],
+    ...Object.entries(compatibilityMatrix.minimumDependencies).map(
+      ([name, version]) => [
+        `/usr/local/unraid-api/node_modules/${name}/package.json`,
+        JSON.stringify({
+          version: version.replace(/\d+$/, (patch) =>
+            String(Number(patch) + 1),
+          ),
+        }),
+      ],
+    ),
+  ]);
+  const exists = fs.existsSync.bind(fs),
+    read = fs.readFileSync.bind(fs);
+  t.mock.method(fs, 'existsSync', (file) => files.has(file) || exists(file));
+  t.mock.method(fs, 'readFileSync', (file, ...args) =>
+    files.has(file) ? files.get(file) : read(file, ...args),
+  );
   const { run, requests } = await harness(t);
   let result = await run(prepareMutation, user('UPDATE_ANY'), {
     input: target,
@@ -1101,29 +1106,6 @@ test('embedded check and child failures redact untrusted messages, retain UNKNOW
   assert.equal(
     result.data.deckBridge.docker.updateCheck.error.code,
     'REGISTRY_AUTH_REQUIRED',
-  );
-});
-
-test('host filtering preserves read checks but never advertises unsupported Engine or batch writes', () => {
-  const capabilities = [
-    'docker.updateCheck',
-    'docker.cancel',
-    'docker.engineImageUpdate',
-    'docker.imageUpdateBatch',
-  ];
-  assert.deepEqual(
-    filterCapabilities(
-      { hostWriteSupported: false, dockerWriteSupported: false },
-      capabilities,
-    ),
-    ['docker.updateCheck'],
-  );
-  assert.deepEqual(
-    filterCapabilities(
-      { hostWriteSupported: true, dockerWriteSupported: false },
-      capabilities,
-    ),
-    ['docker.updateCheck'],
   );
 });
 

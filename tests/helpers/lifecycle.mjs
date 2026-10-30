@@ -23,6 +23,52 @@ export function stageRuntimeInspector(root) {
   );
   return path.join(root, 'api-runtime.mjs');
 }
+export function stageHostCompatibility(
+  root,
+  {
+    managerRoot = root,
+    osVersion = '7.3.2',
+    apiVersion = '4.36.1',
+    dependencies,
+  } = {},
+) {
+  const matrix = JSON.parse(
+    fs.readFileSync(path.join(repo, 'contracts/compatibility.json'), 'utf8'),
+  );
+  write(path.join(root, 'unraid-version'), `version="${osVersion}"\n`);
+  write(
+    path.join(root, 'api/package.json'),
+    JSON.stringify({ version: apiVersion }),
+  );
+  for (const [name, version] of Object.entries(
+    dependencies ?? matrix.minimumDependencies,
+  ))
+    write(
+      path.join(root, 'api/node_modules', name, 'package.json'),
+      JSON.stringify({ version }),
+    );
+  for (const file of ['check-host.js', 'compatibility.json'])
+    write(
+      path.join(managerRoot, 'adapter', file),
+      fs.readFileSync(path.join(repo, 'dist', file)),
+    );
+  const metadata = path.join(managerRoot, 'adapter/package.json');
+  const existing = fs.existsSync(metadata)
+    ? JSON.parse(fs.readFileSync(metadata, 'utf8'))
+    : {};
+  write(metadata, JSON.stringify({ ...existing, type: 'module' }));
+  write(
+    path.join(managerRoot, 'adapter/release-version.mjs'),
+    fs.readFileSync(path.join(repo, 'api-extension/release-version.mjs')),
+  );
+  write(
+    path.join(managerRoot, 'manager.mjs'),
+    rewriteHostPaths(
+      fs.readFileSync(path.join(repo, 'packaging/manager.mjs'), 'utf8'),
+      root,
+    ).replace(/arch:\s*process\.arch/, "arch:'x64'"),
+  );
+}
 export function rewriteHostPaths(source, root) {
   const replacements = {
     '/boot/config/plugins': path.join(root, 'boot/plugins'),
@@ -294,6 +340,7 @@ if [ "$2" = check ]; then [ "$DISK_CURRENT" = 1 ]; exit $?; fi
 mode="$2"
 echo "manager $mode" >> "$EVENTS"
 [ "$FAIL_AT" != "$mode" ] || exit 8
+if [ "$mode" = preflight ] && [ "$REAL_HOST_PREFLIGHT" = 1 ]; then exec "$REAL_NODE" "$@"; fi
 if [ "$mode" = preflight ] && [ -n "$HOLD_FILE" ]; then
   touch "$READY_FILE"
   while [ -e "$HOLD_FILE" ]; do "$REAL_SLEEP" 0.02; done
@@ -334,6 +381,7 @@ if [ "$1" = start ] && [ "$RUNTIME_MISSING" = 1 ]; then printf 'reloaded\\n' > "
     TEST_ARCH: 'x86_64',
     TEST_NODE_ARCH: 'x64',
     REAL_HEALTH_NODE: '',
+    REAL_HOST_PREFLIGHT: '',
     HOLD_FILE: '',
     API_FLUSH_VALUE: '',
     FAIL_CORE_STOP: '',

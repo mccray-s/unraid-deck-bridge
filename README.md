@@ -17,8 +17,9 @@ See the [API reference](docs/api.md). Host support is defined by the [compatibil
 
 ## Requirements
 
-- Linux x86_64 Unraid with a compatible official API and an existing x64 Node runtime. The installer does not install these dependencies.
+- Linux x86_64 Unraid OS 6.12.0 or newer, official API 4.25.3 or newer, and an existing x64 Node runtime. The installer does not install these dependencies.
 - Installation and removal require administrator access and may briefly restart the official API.
+- Newer OS/API versions are not rejected or made read-only merely because they lack a source audit entry. Required runtime dependencies, official permissions, component consistency, and operation-specific interface/input checks still apply.
 
 ## Installation
 

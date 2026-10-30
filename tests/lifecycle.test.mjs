@@ -10,6 +10,7 @@ import {
   build,
   pluginVersion,
   rewriteHostPaths,
+  stageHostCompatibility,
   versionedHealth,
 } from './helpers/lifecycle.mjs';
 import { releaseFixture, parsePlugin } from './helpers/release.mjs';
@@ -285,6 +286,90 @@ test('manager preflight failure never stops services', (t) => {
   assert.ok(f.events().includes('manager preflight'));
   assertBeforeStop(f);
 });
+for (const [osVersion, apiVersion, templateProfile] of [
+  ['6.12.0', '4.25.3', 'DOCKERMAN_CLASSIC_NETWORK'],
+  ['7.2.4', '4.36.1', 'DOCKERMAN_CLASSIC_NETWORK'],
+  ['7.2.5', '4.36.1', 'DOCKERMAN_ENDPOINT_NETWORK'],
+  ['7.3.20', '4.99.0', 'DOCKERMAN_ENDPOINT_NETWORK'],
+  ['8.0.0', '5.0.0', 'DOCKERMAN_ENDPOINT_NETWORK'],
+]) {
+  test(`installer admits OS ${osVersion} API ${apiVersion} through real host preflight`, (t) => {
+    const f = lifecycle(t, { previous: true });
+    stageHostCompatibility(f.root, {
+      managerRoot: f.stage,
+      osVersion,
+      apiVersion,
+    });
+    f.sums();
+    const profile = spawnSync(
+      process.execPath,
+      [path.join(f.stage, 'manager.mjs'), 'template-profile'],
+      { encoding: 'utf8' },
+    );
+    assert.equal(profile.status, 0, profile.stderr);
+    assert.equal(profile.stdout, templateProfile);
+    const prepared = f.run(f.args, { REAL_HOST_PREFLIGHT: '1' });
+    assert.equal(prepared.status, 0, prepared.stdout + prepared.stderr);
+    assert.ok(f.events().includes('manager preflight'));
+    assert.ok(!f.events().includes('manager register'));
+    assert.equal(fs.readFileSync(f.moduleFile, 'utf8'), 'official-old\n');
+    f.commit();
+    const activated = f.activate();
+    assert.equal(activated.status, 0, activated.stdout + activated.stderr);
+    assert.equal(fs.readlinkSync(path.join(f.runtime, 'current')), f.candidate);
+    assert.equal(fs.readFileSync(f.coreState, 'utf8'), 'new\n');
+    assert.ok(f.events().includes('manager register'));
+  });
+}
+for (const [label, host] of [
+  ['below-minimum OS', { osVersion: '6.11.9', apiVersion: '5.0.0' }],
+  ['below-minimum API', { osVersion: '8.0.0', apiVersion: '4.25.2' }],
+  [
+    'missing dependencies on newer API',
+    { osVersion: '8.0.0', apiVersion: '5.0.0', dependencies: {} },
+  ],
+  [
+    'below-minimum dependency on newer API',
+    { osVersion: '8.0.0', apiVersion: '5.0.0', dependency: '0.0.1' },
+  ],
+  [
+    'invalid dependency on newer API',
+    { osVersion: '8.0.0', apiVersion: '5.0.0', dependency: 'invalid' },
+  ],
+]) {
+  test(`installer rejects ${label} before service or API mutation`, (t) => {
+    const f = lifecycle(t, { previous: true });
+    stageHostCompatibility(f.root, { managerRoot: f.stage, ...host });
+    if (host.dependency)
+      write(
+        path.join(f.root, 'api/node_modules/@nestjs/common/package.json'),
+        JSON.stringify({ version: host.dependency }),
+      );
+    const journal = path.join(
+      f.root,
+      'boot/plugins/unraid-deck-bridge/journal/operation.jsonl',
+    );
+    write(journal, '{"phase":"awaiting-recovery"}\n');
+    f.sums();
+    const result = f.run(f.args, { REAL_HOST_PREFLIGHT: '1' });
+    assert.notEqual(result.status, 0);
+    assert.ok(f.events().includes('manager preflight'));
+    assertBeforeStop(f);
+    assert.equal(fs.readFileSync(f.apiState, 'utf8'), 'running\n');
+    assert.equal(fs.readFileSync(f.coreState, 'utf8'), 'old\n');
+    assert.equal(
+      fs.readFileSync(journal, 'utf8'),
+      '{"phase":"awaiting-recovery"}\n',
+    );
+    const profile = spawnSync(
+      process.execPath,
+      [path.join(f.stage, 'manager.mjs'), 'template-profile'],
+      { encoding: 'utf8' },
+    );
+    assert.equal(profile.status, 0, profile.stderr);
+    assert.equal(profile.stdout, '');
+  });
+}
 test('Core stop failure does not switch runtime, stop API or register modules', (t) => {
   const f = installation(t, { previous: true, fail: 'core-stop' });
   assert.notEqual(f.result.status, 0);
@@ -721,9 +806,7 @@ test('legacy 0.1.1 adapter upgrade and rollback preserve task recovery and unrel
   const matrix = JSON.parse(
     fs.readFileSync(path.join(repo, 'contracts/compatibility.json')),
   );
-  for (const [name, version] of Object.entries(
-    matrix.api['4.36.1'].dependencies,
-  ))
+  for (const [name, version] of Object.entries(matrix.minimumDependencies))
     write(
       path.join(api, 'node_modules', name, 'package.json'),
       JSON.stringify({ version }),
@@ -855,14 +938,18 @@ test('legacy 0.1.1 adapter upgrade and rollback preserve task recovery and unrel
     'JSON diagnostics must not echo sensitive fragments',
   );
   write(metadata, packageBytes);
-  for (const version of ['6.12.0', '6.12.14', '7.3.20']) {
+  for (const [version, expected] of [
+    ['6.12.0', 'DOCKERMAN_CLASSIC_NETWORK'],
+    ['6.12.14', 'DOCKERMAN_CLASSIC_NETWORK'],
+    ['7.3.20', 'DOCKERMAN_ENDPOINT_NETWORK'],
+  ]) {
     write(path.join(root, 'unraid-version'), `version="${version}"`);
     run('preflight');
     const template = spawnSync(process.execPath, [file, 'template-profile'], {
       encoding: 'utf8',
     });
     assert.equal(template.status, 0, template.stderr);
-    assert.equal(template.stdout, '');
+    assert.equal(template.stdout, expected);
   }
   write(path.join(root, 'unraid-version'), 'version="6.11.9"');
   const unsupported = spawnSync(process.execPath, [file, 'preflight'], {

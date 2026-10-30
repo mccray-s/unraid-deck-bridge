@@ -15,7 +15,6 @@ import {
 import { AuthZGuard } from 'nest-authz';
 import { graphql } from 'graphql';
 import * as api from '../dist/index.js';
-import { filterCapabilities } from '../dist/check-host.js';
 
 const caps = [
   'array.read',
@@ -402,20 +401,6 @@ test('Core unavailable is not successful empty state or a control retry/fallback
   assert.equal(info.data.deckBridge.info.coreOnline, false);
   assert.deepEqual(info.data.deckBridge.info.capabilities, []);
   assert.equal(info.data.deckBridge.info.reason, 'CORE_UNAVAILABLE');
-});
-
-test('capability filtering retains parity reads on unknown OS and control across Docker drift', () => {
-  assert.deepEqual(filterCapabilities({ hostWriteSupported: false }, caps), [
-    'array.read',
-    'array.parity.read',
-  ]);
-  assert.deepEqual(
-    filterCapabilities(
-      { hostWriteSupported: true, dockerWriteSupported: false },
-      caps,
-    ),
-    caps,
-  );
 });
 
 test('last parity result is a separate nullable observation with exact wall-clock seconds', async (t) => {
