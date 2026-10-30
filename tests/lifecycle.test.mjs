@@ -645,7 +645,7 @@ for (const missingRuntime of [false, true]) {
       fs.rmSync(f.runtime, { recursive: true });
       fs.unlinkSync(f.service);
     }
-    removalHTTP(t, f.root);
+    const http = removalHTTP(t, f.root);
     const remove = path.join(f.root, 'remove-inline.sh');
     write(
       remove,
@@ -706,6 +706,12 @@ for (const missingRuntime of [false, true]) {
     fs.renameSync(persistent, archived);
     const post = f.run([hook, 'plugin', 'remove', 'unraid-deck-bridge.plg']);
     assert.equal(post.status, 0, post.stdout + post.stderr);
+    assert.ok(http.requests().length > 0);
+    for (const request of http.requests()) {
+      assert.equal(request.authenticated, true);
+      assert.equal(request.url, '/graphql');
+      assert.doesNotMatch(request.query, /__schema|__type/);
+    }
     assert.ok(!fs.existsSync(archived));
     assert.ok(!fs.existsSync(hook));
   });

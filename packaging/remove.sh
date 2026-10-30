@@ -34,6 +34,7 @@ const persistent = '/boot/config/plugins/unraid-deck-bridge.plg';
 const registered = '/var/log/plugins/unraid-deck-bridge.plg';
 const archived = '/boot/config/plugins-removed/unraid-deck-bridge.plg';
 const apiSocket = '/var/run/unraid-api.sock';
+const apiSession = '/var/run/unraid-api/local-session';
 const systemRun = path.join('/', 'run');
 const systemServiceDirectory = path.join('/', 'usr', 'local', 'etc', 'rc.d');
 const remnants = [
@@ -204,34 +205,104 @@ function hasBridge(file, value) {
     ? ['dependencies', 'peerDependencies'].some(section => value[section] && Object.hasOwn(value[section], name))
     : value.plugins?.includes(name));
 }
-function queryAPI() {
+function apiProcess() {
+  const processes = fs.readdirSync('/proc/').filter(pid => /^[1-9]\d*$/.test(pid))
+    .map(identity).filter(item => {
+      if (!item?.args || ['Z', 'X'].includes(item.state) ||
+          !['node', 'nodejs'].includes(path.basename(item.exe))) return false;
+      if (item.args.length === 1 && item.args[0] === 'node /usr/local/unraid-api/dist/main.js') return true;
+      let index = 1;
+      while (item.args[index]?.startsWith('--')) {
+        if (!['--no-warnings', '--enable-source-maps'].includes(item.args[index])) return false;
+        index++;
+      }
+      return item.args[index] === '/usr/local/unraid-api/dist/main.js';
+    });
+  if (processes.length !== 1) throw new Error('Official API process identity is unknown');
+  return processes[0];
+}
+function localSession(api) {
+  const environment = fs.readFileSync('/proc/' + api.pid + '/environ', 'utf8').split('\0');
+  const override = environment.find(entry => entry.startsWith('PATHS_LOCAL_SESSION_FILE='));
+  const file = override ? override.slice('PATHS_LOCAL_SESSION_FILE='.length) : apiSession;
+  if (!path.isAbsolute(file)) throw new Error('Unsafe official API local session');
+  for (let parent = path.dirname(file); ; parent = path.dirname(parent)) {
+    let stat = fs.lstatSync(parent);
+    if (stat.isSymbolicLink() && standardSystemLink(parent))
+      stat = fs.lstatSync(fs.realpathSync(parent));
+    if (!stat.isDirectory() || ![0, productionUID].includes(stat.uid) ||
+        (stat.mode & 0o022 && !(stat.uid === 0 && stat.mode & 0o1000)))
+      throw new Error('Unsafe official API local session');
+    if (parent === path.dirname(parent)) break;
+  }
+  const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | fs.constants.O_NONBLOCK);
+  try {
+    const stat = fs.fstatSync(fd);
+    if (!stat.isFile() || stat.uid !== productionUID || stat.mode & 0o077 || stat.size !== 64)
+      throw new Error('Unsafe official API local session');
+    const credential = fs.readFileSync(fd, 'utf8');
+    if (!/^[a-f0-9]{64}$/.test(credential)) throw new Error('Unsafe official API local session');
+    return credential;
+  } finally { fs.closeSync(fd); }
+}
+function graphql(credential, query, allowMissingBridge = false) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ query: '{ __schema { queryType { name fields { name } } } }' });
+    const body = JSON.stringify({ query });
     const req = http.request({ socketPath: apiSocket, path: '/graphql', method: 'POST',
-      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } }, res => {
-      let bytes = '';
-      res.setEncoding('utf8');
-      res.on('data', chunk => { bytes += chunk; if (bytes.length > 4 * 1024 * 1024) req.destroy(new Error('API response too large')); });
-      res.on('error', reject);
+      headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body),
+        'x-local-session': credential } }, res => {
+      const chunks = [];
+      let size = 0;
+      res.on('data', chunk => {
+        size += chunk.length;
+        if (size > 4 * 1024 * 1024) req.destroy(new Error('Official API response too large'));
+        else chunks.push(chunk);
+      });
+      res.on('error', () => reject(new Error('Official API response unavailable')));
       res.on('end', () => {
         try {
           let value;
-          try { value = JSON.parse(bytes); }
+          try { value = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
           catch { throw new Error('Invalid official GraphQL JSON response'); }
-          const query = value.data?.__schema?.queryType;
-          if (res.statusCode !== 200 || (value.errors && (!Array.isArray(value.errors) || value.errors.length)) ||
-              query?.name !== 'Query' || !Array.isArray(query.fields) || !query.fields.length ||
-              query.fields.some(field => typeof field?.name !== 'string' || field.name === 'deckBridge'))
-            throw new Error('Official GraphQL unhealthy or Query.deckBridge remains');
-          resolve();
+          if (![200, 400].includes(res.statusCode) || !value || typeof value !== 'object' || Array.isArray(value))
+            throw new Error('Official API authentication or query failed');
+          // Validation happens before resolver guards: authenticate separately first.
+          if (allowMissingBridge && Array.isArray(value.errors) && value.errors.length === 1 &&
+              value.errors[0]?.extensions?.code === 'GRAPHQL_VALIDATION_FAILED' &&
+              /^Cannot query field "deckBridge" on type "Query"\.(?: Did you mean .+\?)?$/.test(value.errors[0]?.message ?? ''))
+            return resolve(null);
+          if (res.statusCode !== 200 || !value.data ||
+              (value.errors !== undefined && (!Array.isArray(value.errors) || value.errors.length)))
+            throw new Error('Official API authentication or query failed');
+          resolve(value.data);
         } catch (error) { reject(error); }
       });
     });
     const timer = setTimeout(() => req.destroy(new Error('Official API request timeout')), 3000);
     req.once('close', () => clearTimeout(timer));
-    req.on('error', reject);
+    req.on('error', () => reject(new Error('Official API request unavailable')));
     req.end(body);
   });
+}
+function sameAPI(api) {
+  const current = apiProcess();
+  if (current.pid !== api.pid || current.start !== api.start)
+    throw new Error('Official API process changed during verification');
+}
+async function queryAPI() {
+  const api = apiProcess();
+  const credential = localSession(api);
+  const user = await graphql(credential, '{ me { name } }');
+  if (typeof user.me?.name !== 'string') throw new Error('Official API authentication is unknown');
+  sameAPI(api);
+  const bridge = await graphql(credential, '{ deckBridge { info { version coreOnline compatible } } }', true);
+  if (localSession(api) !== credential) throw new Error('Official API local session changed during verification');
+  sameAPI(api);
+  if (bridge === null) return;
+  const info = bridge.deckBridge?.info;
+  if (typeof info?.version !== 'string' || typeof info.coreOnline !== 'boolean' || typeof info.compatible !== 'boolean')
+    throw new Error('Official Bridge namespace presence is unknown');
+  throw Object.assign(new Error('Official Query.deckBridge remains'), { code: 'BRIDGE_PRESENT' });
 }
 async function health() {
   safe(apiSocket);
@@ -250,7 +321,8 @@ async function removeAPI() {
     if (!exists(adapter)) { await health(); return; }
     // Adapter files alone are not an active API entry. Avoid an unnecessary
     // restart when the official schema already proves Bridge is absent.
-    try { await queryAPI(); return; } catch {}
+    try { await queryAPI(); return; }
+    catch (error) { if (error.code !== 'BRIDGE_PRESENT') throw error; }
   }
   const applied = [];
   let stopped = false;
@@ -353,9 +425,10 @@ function installHook() {
   fs.mkdirSync(path.dirname(hook), { recursive: true });
   const constants = { productionUID, STOP_TIMEOUT_MS, TASK_TIMEOUT_MS, HEALTH_TIMEOUT_MS, POLL_MS,
     name, base, runtime, run, service, log, temporary, manifest, config, adapter, hook,
-    persistent, registered, archived, apiSocket, systemRun, systemServiceDirectory, remnants, payload };
+    persistent, registered, archived, apiSocket, apiSession, systemRun, systemServiceDirectory, remnants, payload };
   const functions = [exists, standardSystemLink, safe, erase, sleep, identity, releaseFile, kind,
-    scan, metadata, hasBridge, queryAPI, health, assertStopped, absent, auditBody, finalize, postRemove];
+    scan, metadata, hasBridge, apiProcess, localSession, graphql, sameAPI, queryAPI, health,
+    assertStopped, absent, auditBody, finalize, postRemove];
   const source = '#!/bin/bash\nset -euo pipefail\n' + JSON.stringify(process.execPath) +
     ' --input-type=module - "$@" <<\'BRIDGE_POST_REMOVE\'\n' +
     "import fs from 'node:fs';\nimport path from 'node:path';\nimport http from 'node:http';\n" +

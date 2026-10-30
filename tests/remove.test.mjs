@@ -16,7 +16,12 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const name = 'unraid-deck-bridge';
 async function fixture(
   t,
-  { systemRunLink = false, systemServiceLink = false, realProc = false } = {},
+  {
+    systemRunLink = false,
+    systemServiceLink = false,
+    realProc = false,
+    sessionPath,
+  } = {},
 ) {
   const f = lifecycle(t);
   const systemRun = path.join(f.root, 'system-run');
@@ -94,7 +99,7 @@ async function fixture(
     '/boot/config/plugins/dynamix.my.servers/configs/api.json',
   );
   const originalPackage = {
-    version: '4.35.1',
+    version: '4.37.9',
     dependencies: { unrelated: '1.0.0', [name]: '0.6.0' },
     peerDependencies: { another: '2.0.0', [name]: '0.6.0' },
     unrelated: { keep: true },
@@ -188,7 +193,10 @@ async function fixture(
     '#!/bin/sh\n[ ! -e /dev/fd/9 ] || exit 91\necho "api $1" >> "$EVENTS"\n[ "$FAIL_AT" != "api-$1" ] || exit 9\nif [ "$1" = stop ]; then echo stopped > "$API_STATE"; fi\nif [ "$1" = start ]; then echo running > "$API_STATE"; fi\n',
     0o755,
   );
-  const http = await removalHTTP(t, f.root);
+  const http = removalHTTP(t, f.root, {
+    realProc,
+    sessionPath: sessionPath ? path.join(f.root, sessionPath) : undefined,
+  });
   const run = (env = {}, args = []) =>
     f.run([remove, ...args], { API_STATE: apiState, ...env });
   const invokeHook = (args = ['plugin', 'remove', name + '.plg']) =>
@@ -236,7 +244,6 @@ async function fixture(
     fs.renameSync(persistent, archived);
     const result = invokeHook();
     success(result);
-    assert.match(result.stdout, /Bridge removal verified/);
     assert.equal(fs.existsSync(archived), false);
     assert.equal(fs.existsSync(hook), false);
     assertProtected();
@@ -278,12 +285,138 @@ test('native removal retains the manager input until synchronous final verificat
   const f = await fixture(t);
   const result = f.run();
   success(result);
-  assert.doesNotMatch(result.stdout, /Bridge removal verified/);
   assert.ok(fs.existsSync(f.persistent));
   f.assertRemoved();
   assert.deepEqual(f.f.events(), ['api stop', 'api start']);
   f.finishOfficial();
 });
+
+for (const mode of ['', 'missing-200'])
+  test(`authenticated non-introspection removal accepts missing root (${mode || 'HTTP 400'})`, async (t) => {
+    const f = await fixture(t);
+    f.http.mode(mode);
+    success(f.run({}, ['--standalone']));
+    f.assertRemoved();
+    const requests = f.http.requests();
+    assert.ok(requests.some((request) => /\bme\s*\{/.test(request.query)));
+    assert.ok(
+      requests.some((request) => /\bdeckBridge\s*\{/.test(request.query)),
+    );
+    for (const request of requests) {
+      assert.equal(request.authenticated, true);
+      assert.equal(request.method, 'POST');
+      assert.equal(request.url, '/graphql');
+      assert.doesNotMatch(request.query, /__schema|__type/);
+    }
+    const credential = fs.readFileSync(f.http.session, 'utf8');
+    assert.equal(JSON.stringify(requests).includes(credential), false);
+  });
+
+for (const mode of [
+  'auth',
+  'forbidden',
+  'mixed',
+  'child',
+  'nested-root',
+  'unknown',
+  'wrong-code',
+  'malformed',
+  'empty-data',
+  'invalid-info',
+  'present',
+  'replace-pid',
+  'rotate-session',
+])
+  test(`${mode} cannot prove Bridge absence and preserves removal recovery`, async (t) => {
+    const f = await fixture(t);
+    f.http.mode(mode);
+    assert.notEqual(f.run({}, ['--standalone']).status, 0);
+    f.assertRecovery();
+    assert.deepEqual(
+      JSON.parse(fs.readFileSync(f.manifest)),
+      f.originalPackage,
+    );
+    assert.deepEqual(JSON.parse(fs.readFileSync(f.config)), f.originalConfig);
+    assert.ok(fs.existsSync(f.persistent));
+    assert.ok(fs.existsSync(f.registered));
+    f.http.mode('');
+    success(f.run({}, ['--standalone']));
+    f.assertRemoved();
+  });
+
+for (const mode of [
+  'auth',
+  'mixed',
+  'child',
+  'nested-root',
+  'unknown',
+  'empty-data',
+  'invalid-info',
+  'present',
+  'replace-pid',
+  'rotate-session',
+])
+  test(`self-contained native posthook rejects ${mode} after payload deletion`, async (t) => {
+    const f = await fixture(t);
+    success(f.run());
+    f.assertRemoved();
+    fs.unlinkSync(f.registered);
+    fs.mkdirSync(path.dirname(f.archived), { recursive: true });
+    fs.renameSync(f.persistent, f.archived);
+    f.http.mode(mode);
+    assert.notEqual(f.invokeHook().status, 0);
+    assert.ok(fs.existsSync(f.hook));
+    assert.equal(
+      fs.readFileSync(f.archived, 'utf8'),
+      'canonical plugin bytes\n',
+    );
+    f.assertProtected();
+    f.http.mode('');
+    success(f.invokeHook());
+    assert.equal(fs.existsSync(f.hook), false);
+    assert.equal(fs.existsSync(f.archived), false);
+  });
+
+test('API environment session override and rotation are honored by the standalone remover and final hook', async (t) => {
+  const f = await fixture(t, { sessionPath: 'private-api/session' });
+  success(f.run());
+  f.assertRemoved();
+  write(f.http.session, 'b'.repeat(64), 0o600);
+  f.finishOfficial();
+  assert.ok(f.http.requests().every((request) => request.authenticated));
+});
+
+for (const unsafe of [
+  'symlink',
+  'public',
+  'relative',
+  'malformed',
+  'missing',
+  'public-parent',
+])
+  test(`unsafe ${unsafe} API local session fails without purging recovery`, async (t) => {
+    const f = await fixture(t);
+    if (unsafe === 'symlink') {
+      fs.renameSync(f.http.session, f.http.session + '-retained');
+      fs.symlinkSync(f.http.session + '-retained', f.http.session);
+    } else if (unsafe === 'public') fs.chmodSync(f.http.session, 0o644);
+    else if (unsafe === 'relative')
+      write(
+        path.join(f.http.proc, 'environ'),
+        'PATHS_LOCAL_SESSION_FILE=relative-session\0',
+      );
+    else if (unsafe === 'malformed') write(f.http.session, 'x'.repeat(64));
+    else if (unsafe === 'missing') fs.unlinkSync(f.http.session);
+    else fs.chmodSync(path.dirname(f.http.session), 0o777);
+    assert.notEqual(f.run({}, ['--standalone']).status, 0);
+    f.assertRecovery();
+    assert.deepEqual(
+      JSON.parse(fs.readFileSync(f.manifest)),
+      f.originalPackage,
+    );
+    assert.deepEqual(JSON.parse(fs.readFileSync(f.config)), f.originalConfig);
+    assert.deepEqual(f.http.requests(), []);
+  });
 
 test('standalone removes registration itself and repeated removal leaves no new lock or hook', async (t) => {
   const f = await fixture(t);
@@ -446,6 +579,55 @@ test('absent Bridge metadata skips restart but still requires healthy official G
   assert.deepEqual(f.f.events(), []);
 });
 
+for (const mode of ['auth', 'mixed', 'unknown', 'empty-data', 'invalid-info'])
+  test(`deregistered adapter files do not restart API on ${mode} uncertainty`, async (t) => {
+    const f = await fixture(t);
+    write(
+      f.manifest,
+      JSON.stringify({
+        ...f.originalPackage,
+        dependencies: { unrelated: '1.0.0' },
+        peerDependencies: { another: '2.0.0' },
+      }),
+    );
+    const config = { ...f.originalConfig, plugins: ['unrelated', 'another'] };
+    write(f.config, JSON.stringify(config));
+    f.http.mode(mode);
+    assert.notEqual(f.run({}, ['--standalone']).status, 0);
+    assert.deepEqual(f.f.events(), []);
+    f.assertRecovery();
+    assert.deepEqual(JSON.parse(fs.readFileSync(f.config)), config);
+  });
+
+for (const identity of ['missing', 'lookalike', 'ambiguous'])
+  test(`${identity} official API identity cannot authenticate uninstall`, async (t) => {
+    const f = await fixture(t);
+    if (identity === 'missing') fs.rmSync(f.http.proc, { recursive: true });
+    else if (identity === 'lookalike')
+      write(
+        path.join(f.http.proc, 'cmdline'),
+        [
+          process.execPath,
+          path.join(f.f.root, 'unrelated.js'),
+          path.join(f.f.root, 'api/dist/main.js'),
+          '',
+        ].join('\0'),
+      );
+    else
+      fs.cpSync(f.http.proc, path.join(f.f.root, 'process-table/999997'), {
+        recursive: true,
+        verbatimSymlinks: true,
+      });
+    assert.notEqual(f.run({}, ['--standalone']).status, 0);
+    f.assertRecovery();
+    assert.deepEqual(
+      JSON.parse(fs.readFileSync(f.manifest)),
+      f.originalPackage,
+    );
+    assert.deepEqual(JSON.parse(fs.readFileSync(f.config)), f.originalConfig);
+    assert.deepEqual(f.http.requests(), []);
+  });
+
 test('unused adapter files do not restart an already deregistered healthy API', async (t) => {
   const f = await fixture(t);
   write(
@@ -486,7 +668,6 @@ for (const mode of ['native-complete', 'native-complete-locked']) {
     fs.symlinkSync(process.execPath, path.join(proc, 'exe'));
     const result = f.run({}, ['--standalone']);
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /tasks did not exit/);
     f.assertRecovery();
     assert.deepEqual(f.f.events(), []);
     assert.ok(fs.existsSync(path.join(f.runDir, 'install.lock')));

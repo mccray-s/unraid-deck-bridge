@@ -89,6 +89,10 @@ export function rewriteHostPaths(source, root) {
     ),
     '/tmp/plugins': path.join(root, 'downloads'),
     '/var/run/unraid-deck-bridge': path.join(root, 'run'),
+    '/var/run/unraid-api/local-session': path.join(
+      root,
+      'api-session/local-session',
+    ),
     '/var/run/unraid-api.sock': path.join(root, 'api.sock'),
     '/var/run': path.join(root, 'standard-var-run'),
     '/usr/local/etc/rc.d': path.join(root, 'standard-rc'),

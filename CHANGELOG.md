@@ -1,3 +1,6 @@
+###2026.10.30a
+- Fix: Complete plugin removal when API introspection is disabled.
+
 ###2026.10.30
 - Fix: Allow newer Unraid OS and API releases above the minimum supported versions.
 - Fix: Keep management capabilities available on newer hosts.

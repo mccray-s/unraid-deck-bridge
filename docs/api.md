@@ -8,6 +8,8 @@ OS, API and shared runtime dependency versions have lower bounds only. Stable ne
 
 Activation verifies the authenticated `me` query and the ordinary Bridge `info` query without requiring GraphQL introspection. Only a specifically validated missing `deckBridge` root field establishes that the API has not loaded Bridge; authentication, permission and unrelated validation errors remain unknown.
 
+Native and standalone removal authenticate the ordinary `me` query before proving that `Query.deckBridge` is absent. The verification binds both queries to the same official API process and private local session; authentication, permission, network, malformed response and unrelated validation failures preserve recovery state rather than report success. The native post-remove hook includes its own verification helpers so it still works after the runtime payload is deleted. Adapter files without registration trigger an API reload only when the live Bridge namespace is positively observed.
+
 ## Permissions and availability
 
 Namespace access requires an authenticated identity; individual fields require the relevant official permission. Access to a namespace does not grant access to its children.
