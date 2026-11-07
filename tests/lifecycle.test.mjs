@@ -290,6 +290,8 @@ for (const [osVersion, apiVersion, templateProfile] of [
   ['6.12.0', '4.25.3', 'DOCKERMAN_CLASSIC_NETWORK'],
   ['7.2.4', '4.36.1', 'DOCKERMAN_CLASSIC_NETWORK'],
   ['7.2.5', '4.36.1', 'DOCKERMAN_ENDPOINT_NETWORK'],
+  ['7.2.5-rc.1', '4.36.1', 'DOCKERMAN_CLASSIC_NETWORK'],
+  ['7.4.0-rc.2', '4.37.9-beta.1', 'DOCKERMAN_ENDPOINT_NETWORK'],
   ['7.3.20', '4.99.0', 'DOCKERMAN_ENDPOINT_NETWORK'],
   ['8.0.0', '5.0.0', 'DOCKERMAN_ENDPOINT_NETWORK'],
 ]) {

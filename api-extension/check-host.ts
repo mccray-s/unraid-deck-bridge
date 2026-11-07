@@ -17,21 +17,26 @@ export type HostReport = {
   osEvidence: string;
   reasons: string[];
 };
-export function stableVersion(input: string): string | undefined {
+export function normalizedVersion(input: string): string | undefined {
   const match =
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(
       input,
     );
-  return match && match[0] === input
-    ? `${match[1]}.${match[2]}.${match[3]}`
-    : undefined;
+  if (
+    !match ||
+    match[0] !== input ||
+    match[4]?.split('.').some((identifier) => /^0\d+$/.test(identifier))
+  )
+    return undefined;
+  return input.split('+')[0];
 }
 function meetsMinimumVersion(version: string, minimum: string): boolean {
-  const actual = version.split('.').map(BigInt),
+  const actual = version.split('-')[0].split('.').map(BigInt),
     floor = minimum.split('.').map(BigInt);
   for (let i = 0; i < 3; i++)
     if (actual[i] !== floor[i]) return actual[i] > floor[i];
-  return true;
+  // Contract floors are stable releases; an equal-core prerelease is below its floor.
+  return version === minimum;
 }
 export function resolveCompatibility(
   osInput: string,
@@ -39,8 +44,8 @@ export function resolveCompatibility(
   arch: string,
   dependencies: Record<string, string>,
 ): HostReport {
-  const osVersion = stableVersion(osInput),
-    apiVersion = stableVersion(apiInput);
+  const osVersion = normalizedVersion(osInput),
+    apiVersion = normalizedVersion(apiInput);
   if (!osVersion || !apiVersion || arch !== 'x64')
     throw new Error('Unsupported or invalid host version/architecture');
   if (!meetsMinimumVersion(osVersion, compatibilityMatrix.minimumOSVersion))
@@ -54,7 +59,7 @@ export function resolveCompatibility(
   for (const [name, minimum] of Object.entries<string>(
     compatibilityMatrix.minimumDependencies,
   )) {
-    const version = stableVersion(dependencies[name]);
+    const version = normalizedVersion(dependencies[name]);
     if (!version || !meetsMinimumVersion(version, minimum))
       throw new Error(`Host dependency requires ${name} ${minimum} or newer`);
   }

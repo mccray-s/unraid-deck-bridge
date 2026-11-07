@@ -7,18 +7,22 @@ import {
   assertSupportedHost,
   resolveCompatibility,
   compatibilityMatrix,
-  stableVersion,
+  normalizedVersion,
 } from '../dist/check-host.js';
 
 const dependencies = () => ({ ...compatibilityMatrix.minimumDependencies });
 
 // Admission is independent of whether an exact release has a source audit snapshot.
-test('minimum and newer stable OS/API releases retain management eligibility', () => {
+test('minimum and newer OS/API releases retain management eligibility including prereleases', () => {
   for (const [osVersion, apiVersion] of [
     ['6.12.0', '4.25.3'],
     ['7.2.3', '4.28.2'],
     ['7.3.4', '4.37.7'],
     ['7.3.4', '4.37.9+build.verified'],
+    ['7.4.0-rc.2', '4.37.9'],
+    ['7.4.0-beta.3', '4.37.9-rc.1'],
+    ['8.0.0-alpha.1+build.123', '5.0.0-beta.2+build.456'],
+    ['6.12.1-rc.1', '4.25.4-beta.1'],
     ['7.3.20', '4.38.0'],
     ['8.0.0', '5.0.0'],
     ['10.0.0', '100.0.0'],
@@ -36,7 +40,7 @@ test('minimum and newer stable OS/API releases retain management eligibility', (
       true,
       `${osVersion}/${apiVersion}`,
     );
-    assert.equal(report.osVersion, osVersion);
+    assert.equal(report.osVersion, osVersion.split('+')[0]);
     assert.equal(report.apiVersion, apiVersion.split('+')[0]);
   }
 });
@@ -48,18 +52,24 @@ test('minimum-only admission still rejects older, malformed and non-x64 hosts', 
     ['7.3.4', '3.99.999', 'x64'],
     ['06.12.0', '4.37.9', 'x64'],
     ['6.12.0-beta.1', '4.37.9', 'x64'],
+    ['6.12.0-rc.1', '4.37.9', 'x64'],
+    ['7.3.4', '4.25.3-rc.1', 'x64'],
     ['7.3.4', '4.37', 'x64'],
-    ['7.3.4', '4.37.9-rc.1', 'x64'],
+    ['7.4.0-rc.02', '4.37.9', 'x64'],
+    ['7.4.0-rc..2', '4.37.9', 'x64'],
+    ['7.4.0-', '4.37.9', 'x64'],
+    ['7.3.4', '4.37.9-beta.01', 'x64'],
     ['7.3.4', '04.37.9', 'x64'],
     ['7.3.4', '4.37.9+bad..tag', 'x64'],
     ['7.3.4', '4.37.9\n', 'x64'],
+    ['7.4.0-rc.2\n', '4.37.9', 'x64'],
     ['7.3.4', '4.37.9', 'arm64'],
   ]) {
     assert.throws(() =>
       resolveCompatibility(osVersion, apiVersion, arch, dependencies()),
     );
   }
-  assert.equal(stableVersion('4.37.9+build.verified'), '4.37.9');
+  assert.equal(normalizedVersion('4.37.9+build.verified'), '4.37.9');
 });
 
 test('runtime dependency patches and newer majors are admitted without exact pins', () => {
@@ -67,6 +77,7 @@ test('runtime dependency patches and newer majors are admitted without exact pin
     { '@nestjs/common': '11.1.27', '@nestjs/core': '11.1.27' },
     { '@nestjs/graphql': '13.4.3', 'class-validator': '0.15.2' },
     { graphql: '17.0.0', 'nest-authz': '3.0.0', 'class-transformer': '1.0.0' },
+    { graphql: '17.0.0-rc.1', '@nestjs/common': '11.1.7-beta.2' },
   ]) {
     const report = resolveCompatibility('7.3.4', '4.37.9', 'x64', {
       ...dependencies(),
@@ -78,6 +89,8 @@ test('runtime dependency patches and newer majors are admitted without exact pin
     ['@nestjs/common', '11.1.5'],
     ['class-validator', '0.14.1'],
     ['graphql', '16.10.99'],
+    ['graphql', '16.11.0-rc.1'],
+    ['graphql', '17.0.0-rc.01'],
     ['nest-authz', 'not-a-version'],
   ]) {
     assert.throws(
@@ -101,7 +114,10 @@ test('template dialect changes at its protocol floor without denying newer OS re
   for (const [version, expected] of [
     ['6.12.0', 'DOCKERMAN_CLASSIC_NETWORK'],
     ['7.2.4', 'DOCKERMAN_CLASSIC_NETWORK'],
+    ['7.2.5-rc.1', 'DOCKERMAN_CLASSIC_NETWORK'],
     ['7.2.5', 'DOCKERMAN_ENDPOINT_NETWORK'],
+    ['7.2.6-beta.1', 'DOCKERMAN_ENDPOINT_NETWORK'],
+    ['7.4.0-rc.2', 'DOCKERMAN_ENDPOINT_NETWORK'],
     ['7.2.9', 'DOCKERMAN_ENDPOINT_NETWORK'],
     ['7.3.4', 'DOCKERMAN_ENDPOINT_NETWORK'],
     ['8.0.0', 'DOCKERMAN_ENDPOINT_NETWORK'],
@@ -140,6 +156,13 @@ test('real host metadata checks dependencies for unlisted API versions and needs
   fs.writeFileSync(paths.osVersion, 'version="8.0.0"\n');
   fs.writeFileSync(paths.apiPackage, JSON.stringify({ version: '5.0.0' }));
   assert.equal(assertSupportedHost(paths).hostWriteSupported, true);
+  fs.writeFileSync(paths.osVersion, 'version="7.4.0-rc.2"\n');
+  fs.writeFileSync(
+    paths.apiPackage,
+    JSON.stringify({ version: '4.37.9-beta.1' }),
+  );
+  assert.equal(assertSupportedHost(paths).osVersion, '7.4.0-rc.2');
+  assert.equal(assertSupportedHost(paths).apiVersion, '4.37.9-beta.1');
   const graphqlPackage = path.join(dir, 'node_modules/graphql/package.json');
   fs.writeFileSync(graphqlPackage, JSON.stringify({ version: '16.10.0' }));
   assert.throws(() => assertSupportedHost(paths), /graphql/);

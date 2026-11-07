@@ -144,6 +144,7 @@ test('supervisor stops instead of restarting Core after registration disappears'
 });
 for (const [osVersion, apiVersion, expected] of [
   ['7.2.4', '4.25.3', 'DOCKERMAN_CLASSIC_NETWORK'],
+  ['7.4.0-rc.2', '4.37.9-beta.1', 'DOCKERMAN_ENDPOINT_NETWORK'],
   ['8.0.0', '5.0.0', 'DOCKERMAN_ENDPOINT_NETWORK'],
 ]) {
   test(`supervisor hands the real minimum-selected ${expected} dialect to Core`, (t) => {

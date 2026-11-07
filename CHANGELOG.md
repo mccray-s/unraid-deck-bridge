@@ -1,3 +1,6 @@
+###2026.11.07
+- Fix: Allow newer Unraid OS and API prerelease versions, including RC and Beta, during compatibility checks.
+
 ###2026.10.30a
 - Fix: Complete plugin removal when API introspection is disabled.
 
