@@ -229,3 +229,13 @@ Array controls reject unsupported or uncertain situations, including required un
 Use stable error codes and safe messages, not raw server output or message matching. Common codes include CONFLICT, BUSY, PLAN_EXPIRED, PLAN_MISMATCH, IDEMPOTENCY_CONFLICT, UNSUPPORTED_TEMPLATE, UNSUPPORTED_CONTAINER, IMAGE_REFERENCE_CHANGED, RECOVERY_REQUIRED, NOT_CANCELLABLE, and TEMPLATE_MANAGEMENT_UPGRADE_REQUIRED.
 
 Configuration failures can expose `GraphQLError.extensions.deckBridgeIssue`; task failures use typed `error.issue`. Its `field`, optional `target`, and nonnegative `index` identify a public configuration location without containing secret values. Preserve unknown errors for display rather than converting authentication, availability, or protocol failures into an empty result. Never log API credentials or submitted sensitive configuration.
+
+
+### Installed plugin updates
+
+- `deckBridge.plugins.checkUpdates(pluginId: String)` (mutation) starts a bounded check across installed plugins, or one exact installed basename. `deckBridge.plugins.updateCheck(id: String!)` reads its current results. Both require CONFIG READ_ANY.
+- `deckBridge.plugins.update(input: DeckBridgePluginUpdateInput!)` requires CONFIG UPDATE_ANY and the exact target IDs from the same principal’s valid check. Core runs them sequentially. Single and batch callers share the same operation.
+- `deckBridge.plugins.updateTask(requestId: String!)` requires CONFIG READ_ANY. The same authenticated principal can read current state and retained, bounded output separately for each plugin. Retry observation with the original request ID after a connection interruption. If the task is missing, a confirmed expired check and a second missing task read establish that the request was not accepted.
+- The stable `plugins.updateProtocol` capability identifies versions that implement the plugin update contract even when the host installer is unavailable. Hosts advertise `plugins.updateCheck` when checks are available and `plugins.update` when writes are accepted, independently of Docker. Checks use the installed manifest’s HTTPS source. Update execution protects Unraid components and Bridge itself.
+
+During an interrupted update, Core retains the last published per-plugin logs and marks the affected item for attention. A fresh check can offer an explicit update after the prior installer has stopped and its installed registration has been verified. The historical task stays available with its original outcome.

@@ -701,6 +701,144 @@
         }
       }
     },
+    "/plugins/update-check": {
+      "post": {
+        "summary": "Start checking installed plugins without running plugin scripts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pluginId": {
+                    "type": "string",
+                    "description": "An exact installed basename. Omit or use an empty string to check all installed plugins."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginUpdateCheck"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured Core error"
+          }
+        }
+      },
+      "get": {
+        "summary": "Read the current principal’s plugin check",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginUpdateCheck"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured Core error"
+          }
+        }
+      }
+    },
+    "/plugins/update": {
+      "post": {
+        "summary": "Submit an explicit checked plugin set for sequential installation",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PluginUpdateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginUpdateTask"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured Core error"
+          }
+        }
+      },
+      "get": {
+        "summary": "Read a plugin update task and its per-plugin logs owned by the current principal. Supply one identifier.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requestId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PluginUpdateTask"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Structured Core error"
+          }
+        }
+      }
+    },
     "/plugins/status": {
       "get": {
         "parameters": [
@@ -2171,6 +2309,7 @@
             "type": "boolean"
           },
           "capabilities": {
+            "description": "plugins.updateProtocol indicates contract support independently of the current availability flags plugins.updateCheck and plugins.update.",
             "type": "array",
             "items": {
               "type": "string"
@@ -2389,6 +2528,120 @@
           },
           "parity": {
             "$ref": "#/components/schemas/ParityStatus"
+          }
+        }
+      },
+      "PluginUpdateInput": {
+        "type": "object",
+        "required": [
+          "checkId",
+          "requestId",
+          "pluginIds"
+        ],
+        "properties": {
+          "checkId": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "pluginIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 128,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PluginUpdateItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "currentVersion",
+          "targetVersion",
+          "state",
+          "output"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "currentVersion": {
+            "type": "string"
+          },
+          "targetVersion": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "output": {
+            "type": "array",
+            "maxItems": 120,
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PluginUpdateCheck": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "expires",
+          "items"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "maxItems": 128,
+            "items": {
+              "$ref": "#/components/schemas/PluginUpdateItem"
+            }
+          }
+        }
+      },
+      "PluginUpdateTask": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "items"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "maxItems": 128,
+            "items": {
+              "$ref": "#/components/schemas/PluginUpdateItem"
+            }
           }
         }
       },

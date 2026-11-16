@@ -1556,6 +1556,43 @@ export class DeckBridgeArrayStatus {
   @Field({ nullable: true }) reason?: string;
 }
 @ObjectType()
+export class DeckBridgePluginUpdateItem {
+  @Field() id!: string;
+  @Field() name!: string;
+  @Field() currentVersion!: string;
+  @Field() targetVersion!: string;
+  @Field() state!: string;
+  @Field(() => String, { nullable: true }) code!: string | null;
+  @Field(() => [String]) output!: string[];
+}
+@ObjectType()
+export class DeckBridgePluginUpdateCheck {
+  @Field() id!: string;
+  @Field() status!: string;
+  @Field() expires!: string;
+  @Field(() => [DeckBridgePluginUpdateItem])
+  items!: DeckBridgePluginUpdateItem[];
+}
+@ObjectType()
+export class DeckBridgePluginUpdateTask {
+  @Field() id!: string;
+  @Field() status!: string;
+  @Field(() => [DeckBridgePluginUpdateItem])
+  items!: DeckBridgePluginUpdateItem[];
+}
+@InputType()
+export class DeckBridgePluginUpdateInput {
+  @Field() @IsString() @Length(8, 128) checkId!: string;
+  @Field() @IsString() @Length(8, 128) requestId!: string;
+  @Field(() => [String])
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(128)
+  @Matches(/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}\.plg$/, { each: true })
+  pluginIds!: string[];
+}
+
+@ObjectType()
 export class DeckBridgePlugin {
   @Field() id!: string;
   @Field() name!: string;
@@ -1668,10 +1705,47 @@ export class DeckBridgePluginQueriesResolver {
   installed(@Context() context: any) {
     return callCore(principal(context), '/plugins/status');
   }
+  @ResolveField(() => DeckBridgePluginUpdateCheck)
+  @UsePermissions({ resource: Resource.CONFIG, action: AuthAction.READ_ANY })
+  updateCheck(@Args('id') id: string, @Context() context: any) {
+    return callCore(
+      principal(context),
+      `/plugins/update-check?id=${encodeURIComponent(id)}`,
+    );
+  }
+  @ResolveField(() => DeckBridgePluginUpdateTask, { nullable: true })
+  @UsePermissions({ resource: Resource.CONFIG, action: AuthAction.READ_ANY })
+  updateTask(@Args('requestId') requestId: string, @Context() context: any) {
+    return callCore(
+      principal(context),
+      `/plugins/update?requestId=${encodeURIComponent(requestId)}`,
+    );
+  }
 }
 
 @Resolver(() => DeckBridgePluginMutations)
 export class DeckBridgePluginMutationsResolver {
+  @ResolveField(() => DeckBridgePluginUpdateCheck)
+  @UsePermissions({ resource: Resource.CONFIG, action: AuthAction.READ_ANY })
+  checkUpdates(
+    @Args('pluginId', { type: () => String, nullable: true })
+    pluginId: string | null,
+    @Context() context: any,
+  ) {
+    return callCore(principal(context), '/plugins/update-check', {
+      pluginId: pluginId ?? '',
+    });
+  }
+
+  @ResolveField(() => DeckBridgePluginUpdateTask)
+  @UsePermissions({ resource: Resource.CONFIG, action: AuthAction.UPDATE_ANY })
+  update(
+    @Args('input') input: DeckBridgePluginUpdateInput,
+    @Context() context: any,
+  ) {
+    return hostWrite(context, '/plugins/update', input);
+  }
+
   @ResolveField(() => DeckBridgeHostPlan)
   @UsePermissions({ resource: Resource.CONFIG, action: AuthAction.DELETE_ANY })
   prepareUninstall(

@@ -741,11 +741,21 @@ input DeckBridgeHostPreviewInput {
 
 type DeckBridgePluginQueries {
   installed: [DeckBridgePlugin!]!
+  updateCheck(id: String!): DeckBridgePluginUpdateCheck!
+  updateTask(requestId: String!): DeckBridgePluginUpdateTask
 }
 
 type DeckBridgePluginMutations {
+  checkUpdates(pluginId: String): DeckBridgePluginUpdateCheck!
+  update(input: DeckBridgePluginUpdateInput!): DeckBridgePluginUpdateTask!
   prepareUninstall(pluginId: String!): DeckBridgeHostPlan!
   uninstall(input: DeckBridgeSubmitInput!): DeckBridgeOperation!
+}
+
+input DeckBridgePluginUpdateInput {
+  checkId: String!
+  requestId: String!
+  pluginIds: [String!]!
 }
 
 type DeckBridgeArrayQueries {
@@ -823,6 +833,29 @@ type DeckBridgeArrayStatus {
   canStop: Boolean!
   liveExecutionVerified: Boolean!
   reason: String
+}
+
+type DeckBridgePluginUpdateItem {
+  id: String!
+  name: String!
+  currentVersion: String!
+  targetVersion: String!
+  state: String!
+  code: String
+  output: [String!]!
+}
+
+type DeckBridgePluginUpdateCheck {
+  id: String!
+  status: String!
+  expires: String!
+  items: [DeckBridgePluginUpdateItem!]!
+}
+
+type DeckBridgePluginUpdateTask {
+  id: String!
+  status: String!
+  items: [DeckBridgePluginUpdateItem!]!
 }
 
 type DeckBridgePlugin {
