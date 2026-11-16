@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Plugin>
-  <Name>Unraid Deck Bridge</Name>
+  <Name>Deck Bridge for Unraid®</Name>
   <PluginAuthor>mccray</PluginAuthor>
   <PluginURL>https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/unraid-deck-bridge.plg</PluginURL>
   <Support>https://github.com/mccray-s/unraid-deck-bridge/issues</Support>
   <Project>https://github.com/mccray-s/unraid-deck-bridge</Project>
   <ReadMe>https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/README.md</ReadMe>
   <Icon>https://raw.githubusercontent.com/mccray-s/unraid-deck-bridge/main/assets/unraid-deck-bridge.png</Icon>
-  <Overview>Management companion for the Unraid Deck iOS app. Adds Docker configuration, templates and image updates, host controls, supported plugin removal, and array and parity controls through the official Unraid API. Uses official authentication and permissions. Requires Linux x86_64 Unraid, a compatible Unraid API, and an existing x64 Node runtime. Installation and removal may briefly interrupt API connections.</Overview>
+  <Overview>A companion plugin for the Deck iOS app. Manage Docker containers, templates and image updates, supported plugins, and host, array and parity controls through the Unraid API using its authentication and permissions.
+
+Bridge 2026.11.16 adds individual and batch plugin updates with progress and logs, and read-only browsing for Docker mount paths when creating containers.
+
+Requires x86_64 Unraid OS 6.12.0 or later, Unraid API 4.25.3 or later, and an existing x64 Node.js runtime. Installation and removal may briefly interrupt API connections.
+
+Unraid® is a trademark of Lime Technology, Inc. Not affiliated.</Overview>
   <Category>Tools:Utilities</Category>
   <MinVer>6.12.0</MinVer>
 </Plugin>

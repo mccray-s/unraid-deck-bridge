@@ -197,6 +197,7 @@ async function buildArchive(coreInput, pkg, release) {
     path.join(repo, 'assets/unraid-deck-bridge.png'),
   );
   selected.set('LICENSE', path.join(repo, 'LICENSE'));
+  selected.set('NOTICE.md', path.join(repo, 'NOTICE.md'));
   const members = new Map(
     [...selected].map(([name, file]) => [name, regularBytes(file)]),
   );

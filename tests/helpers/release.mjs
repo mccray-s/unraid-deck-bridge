@@ -116,6 +116,7 @@ export function releaseFixture(t) {
     recursive: true,
   });
   write(path.join(root, 'LICENSE'), 'Bridge fixture LICENSE\n');
+  write(path.join(root, 'NOTICE.md'), 'Bridge fixture license notice\n');
   const core = path.join(root, 'core-bin/linux-amd64/deck-bridge-core');
   write(core, elf(), 0o755);
   for (const name of ['LICENSE', 'THIRD_PARTY.md'])

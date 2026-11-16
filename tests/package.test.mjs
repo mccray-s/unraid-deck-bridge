@@ -318,6 +318,7 @@ test('archive has only authenticated release members and deterministic metadata'
     'repair.sh',
     'remove.sh',
     'LICENSE',
+    'NOTICE.md',
     'licenses/core/LICENSE',
     'licenses/core/THIRD_PARTY.md',
     'SHA256SUMS',
@@ -381,6 +382,10 @@ test('archive has only authenticated release members and deterministic metadata'
     fs.readFileSync(path.join(f.root, 'api-extension/release-version.mjs')),
   );
   assert.notDeepEqual(data.LICENSE, data['licenses/core/LICENSE']);
+  assert.deepEqual(
+    data['NOTICE.md'],
+    fs.readFileSync(path.join(f.root, 'NOTICE.md')),
+  );
   assert.deepEqual(
     execFileSync('tar', ['-tzf', release.archive], { encoding: 'utf8' })
       .trimEnd()

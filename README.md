@@ -1,8 +1,10 @@
-# Unraid Deck Bridge
+# Deck Bridge for Unraid®
 
 English | [简体中文](README.zh-CN.md)
 
-An Unraid plugin that adds Docker, host, plugin, and array management for **Unraid Deck** through the official `/graphql` endpoint. It uses official authentication and resource permissions without replacing the official Docker API.
+An Unraid plugin that adds Docker, host, plugin, and array management for the **Deck iOS app** through the official `/graphql` endpoint. It uses the API's authentication and resource permissions.
+
+Unraid® is a registered trademark of Lime Technology, Inc. This application is not affiliated with, endorsed, or sponsored by Lime Technology, Inc.
 
 ## Features
 
@@ -10,6 +12,8 @@ An Unraid plugin that adds Docker, host, plugin, and array management for **Unra
 - Import URL, XML, or local User/Default templates; explicitly adopt containers or reinstall from a selected User template.
 - Check image updates, update individual containers or batches, restart containers, and cancel eligible Docker tasks.
 - Query Docker networks, runtime information, creation defaults, and host devices.
+- Browse host files and directories in read-only mode when choosing Docker mount paths for a new container (Bridge `2026.11.16` or later).
+- Check for updates to installed Unraid plugins, update supported plugins individually or in batches, and view per-plugin progress, results, and logs (Bridge `2026.11.16` or later).
 - Preview and execute shutdown, reboot, supported plugin removal, array start/stop, and parity-check controls.
 - Query task results and recovery information, and subscribe to progress after reconnecting.
 
@@ -53,6 +57,10 @@ The native plugin, Bridge and Core report the same release identity, for example
 
 Removal deletes Bridge's settings and task history, but does not delete existing Docker containers, images, volumes, or user templates. The official API may restart briefly during removal.
 
+## Support
+
+Report problems in [GitHub Issues](https://github.com/mccray-s/unraid-deck-bridge/issues). Include your Bridge, Unraid OS, and Unraid API versions, along with the steps to reproduce the problem.
+
 ## License
 
-Bridge source is **GPL-2.0-or-later**; see [LICENSE](LICENSE). Third-party components retain their own licenses; see [vendor attribution](vendor/README.md).
+The Bridge source is licensed under **GPL-2.0-or-later**. See the [license notice](NOTICE.md) and [GPL text](LICENSE). The release package includes a separately licensed, closed-source Core executable with its license and third-party notices. Dependencies retain their own licenses, including those listed in [vendor attribution](vendor/README.md).

@@ -1,8 +1,10 @@
-# Unraid Deck Bridge
+# Deck Bridge for Unraid®
 
 [English](README.md) | 简体中文
 
-为 **Unraid Deck** 提供 Docker、主机、插件和阵列管理能力的 Unraid 插件，通过官方 `/graphql` 接口使用，沿用官方身份认证和资源权限，不替换官方 Docker API。
+为 **Deck iOS App** 提供 Docker、主机、插件和阵列管理能力的 Unraid 插件，通过官方 `/graphql` 接口使用，沿用该接口的身份认证和资源权限。
+
+Unraid® is a registered trademark of Lime Technology, Inc. This application is not affiliated with, endorsed, or sponsored by Lime Technology, Inc.
 
 ## 功能
 
@@ -10,6 +12,8 @@
 - 导入 URL、XML、本地 User/Default 模板，显式接管容器或从选定 User 模板重装。
 - 检查镜像更新，执行单项或批量更新、重启容器，取消符合条件的 Docker 任务。
 - 查询 Docker 网络、运行环境、创建默认值和宿主设备。
+- 创建 Docker 容器时，以只读方式浏览主机文件和目录，选择挂载路径（需要 Bridge `2026.11.16` 或更新版本）。
+- 检查已安装的 Unraid 插件是否有可用更新，单独或批量更新受支持的插件，并查看每个插件的进度、结果和日志（需要 Bridge `2026.11.16` 或更新版本）。
 - 预览并执行关机、重启、受支持的插件卸载、阵列启停和校验控制。
 - 查询任务结果与恢复信息，断线重连后继续订阅进度。
 
@@ -53,6 +57,10 @@
 
 卸载会删除 Bridge 自身的设置和任务记录，不会删除现有 Docker 容器、镜像、卷或用户模板。卸载期间官方 API 可能短暂重启。
 
+## 支持
+
+请通过 [GitHub Issues](https://github.com/mccray-s/unraid-deck-bridge/issues) 反馈问题，并附上 Bridge、Unraid OS 和 Unraid API 的版本及复现步骤。
+
 ## 许可
 
-Bridge 源码采用 **GPL-2.0-or-later**，见 [LICENSE](LICENSE)。第三方组件保留各自许可，见 [第三方归属声明](vendor/README.md)。
+Bridge 源码采用 **GPL-2.0-or-later**，见 [许可声明](NOTICE.md) 和 [GPL 正文](LICENSE)。安装包包含单独授权的闭源 Core 可执行文件及其许可和第三方声明。依赖保留各自的许可，包括 [第三方归属声明](vendor/README.md) 中列出的依赖。
