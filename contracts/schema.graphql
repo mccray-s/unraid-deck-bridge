@@ -100,6 +100,24 @@ type DeckBridgeDeviceInfo {
   kind: String!
 }
 
+type DeckBridgeHostPathEntry {
+  name: String!
+  path: String!
+  kind: DeckBridgeHostPathKind!
+}
+
+enum DeckBridgeHostPathKind {
+  DIRECTORY
+  FILE
+}
+
+type DeckBridgeHostPathPage {
+  path: String!
+  parentPath: String
+  entries: [DeckBridgeHostPathEntry!]!
+  nextCursor: String
+}
+
 type DeckBridgeInfo {
   principalId: String!
   engineApiVersion: String
@@ -510,8 +528,15 @@ type DeckBridgeDockerQueries {
   templateAdoption(containerId: String!): DeckBridgeDockerEditability!
   environment: DeckBridgeDockerEnvironment!
   devices: [DeckBridgeDeviceInfo!]!
+  hostPaths(path: String, kind: DeckBridgeHostPathFilter! = DIRECTORIES, first: Int! = 100, after: String): DeckBridgeHostPathPage!
   config(containerId: String!): DeckBridgeTemplateDraft!
   creationDefaults: DeckBridgeCreationDefaults!
+}
+
+enum DeckBridgeHostPathFilter {
+  DIRECTORIES
+  FILES
+  ALL
 }
 
 type DeckBridgeDockerMutations {

@@ -19,6 +19,7 @@ Namespace access requires an authenticated identity; individual fields require t
 | `deckBridge.info` | ME / READ_ANY |
 | `docker.config`, `editability`, `templateAdoption`, `localTemplates`, `environment`, `updateAccess`, `updateCheck` | DOCKER / READ_ANY |
 | `docker.devices` | OS / READ_ANY |
+| `docker.hostPaths` (read-only bind-source picker) | DOCKER / CREATE_ANY |
 | `docker.importTemplate`, `prepareInstall`, `install`, `cancelInstall` | DOCKER / CREATE_ANY |
 | `docker.prepareEdit`, `prepareTemplateReplacement`, `edit`, `restart`, `prepareImageUpdate`, `updateContainers`, `cancelEdit` | DOCKER / UPDATE_ANY |
 | `docker.checkUpdates` (metadata job, not a container change) | DOCKER / READ_ANY |
@@ -32,6 +33,8 @@ All paths in the table except subscriptions are under `deckBridge`. Query and mu
 Read successful capability responses before offering actions. Relevant capabilities include `docker.engineEdit`, `docker.configurationFeedback`, `docker.cancel`, `docker.templateManagementRead`, `docker.templateAdopt`, `docker.templateReplace`, `plugins.uninstall`, `array.parity.read`, and `array.parity.control`. A read capability is not write permission, and schema visibility alone does not prove the host supports an action. `docker.updateAccess` allows Docker-only availability checks without ME permission.
 
 An offline service, permission error, transport failure, or unknown mutation outcome is **not** evidence that a capability is absent. Do not use these failures to trigger an alternate write API. `liveExecutionVerified=false`, where returned, must not be presented as verified live execution.
+
+`docker.hostPaths` is an optional read-only query for new-container bind sources. The `docker.hostPaths` capability signals support. An omitted path starts at the configured AppData directory, then at `/mnt/user` or `/` if the preceding location is absent. Every request lists one level of the host filesystem. `kind` defaults to `DIRECTORIES`, and also accepts `FILES` (regular files) or `ALL`. `first` defaults to 100 and accepts 1–200. Continue with `nextCursor`, the returned absolute `path`, and the same filter. Directory entries may change between pages. The query exposes names, paths, and kinds, and performs no filesystem writes or file content reads. API keys with Docker create permission can enumerate accessible host paths; keys restricted to Docker read cannot.
 
 ```graphql
 query BridgeInfo {

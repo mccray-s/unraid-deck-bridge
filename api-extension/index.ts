@@ -115,6 +115,37 @@ export class DeckBridgeDeviceInfo {
   @Field() path!: string;
   @Field() kind!: string;
 }
+
+export enum DeckBridgeHostPathFilter {
+  DIRECTORIES = 'DIRECTORIES',
+  FILES = 'FILES',
+  ALL = 'ALL',
+}
+registerEnumType(DeckBridgeHostPathFilter, {
+  name: 'DeckBridgeHostPathFilter',
+});
+
+export enum DeckBridgeHostPathKind {
+  DIRECTORY = 'DIRECTORY',
+  FILE = 'FILE',
+}
+registerEnumType(DeckBridgeHostPathKind, { name: 'DeckBridgeHostPathKind' });
+
+@ObjectType()
+export class DeckBridgeHostPathEntry {
+  @Field() name!: string;
+  @Field() path!: string;
+  @Field(() => DeckBridgeHostPathKind) kind!: DeckBridgeHostPathKind;
+}
+
+@ObjectType()
+export class DeckBridgeHostPathPage {
+  @Field() path!: string;
+  @Field(() => String, { nullable: true }) parentPath!: string | null;
+  @Field(() => [DeckBridgeHostPathEntry]) entries!: DeckBridgeHostPathEntry[];
+  @Field(() => String, { nullable: true }) nextCursor!: string | null;
+}
+
 @ObjectType()
 export class DeckBridgeInfo {
   @Field() principalId!: string;
@@ -1245,6 +1276,29 @@ export class DeckBridgeDockerQueriesResolver {
   @UsePermissions({ resource: Resource.OS, action: AuthAction.READ_ANY })
   devices(@Context() context: any) {
     return callCore(principal(context), '/docker/devices');
+  }
+
+  @ResolveField(() => DeckBridgeHostPathPage)
+  @UsePermissions({ resource: Resource.DOCKER, action: AuthAction.CREATE_ANY })
+  hostPaths(
+    @Args('path', { type: () => String, nullable: true }) path: string | null,
+    @Args('kind', {
+      type: () => DeckBridgeHostPathFilter,
+      defaultValue: DeckBridgeHostPathFilter.DIRECTORIES,
+    })
+    kind: DeckBridgeHostPathFilter,
+    @Args('first', { type: () => Int, defaultValue: 100 }) first: number,
+    @Args('after', { type: () => String, nullable: true }) after: string | null,
+    @Context() context: any,
+  ) {
+    const actor = principal(context);
+    const params = new URLSearchParams({ kind, first: String(first) });
+    if (path != null) params.set('path', path);
+    if (after != null) params.set('after', after);
+    return callCore<DeckBridgeHostPathPage>(
+      actor,
+      `/docker/host-paths?${params.toString()}`,
+    );
   }
   @ResolveField(() => DeckBridgeTemplateDraft)
   @UsePermissions({ resource: Resource.DOCKER, action: AuthAction.READ_ANY })

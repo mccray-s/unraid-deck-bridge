@@ -1105,6 +1105,22 @@
         ]
       }
     },
+    "/docker/host-paths": {
+      "get": {
+        "description": "List immediate children on the host without opening file contents or changing the filesystem. The GraphQL adapter requires DOCKER CREATE_ANY. Omitting path starts at configured AppData, then /mnt/user, then / when the prior locations are absent.",
+        "parameters": [
+          {"$ref":"#/components/parameters/BridgeActor"},
+          {"name":"path","in":"query","schema":{"type":"string","minLength":1,"maxLength":4096}},
+          {"name":"kind","in":"query","schema":{"type":"string","enum":["DIRECTORIES","FILES","ALL"],"default":"DIRECTORIES"}},
+          {"name":"first","in":"query","schema":{"type":"integer","minimum":1,"maximum":200,"default":100}},
+          {"name":"after","in":"query","schema":{"type":"string","minLength":1,"maxLength":1024}}
+        ],
+        "responses": {
+          "200":{"description":"Name-sorted entries and an opaque continuation bound to the path and filter","content":{"application/json":{"schema":{"$ref":"#/components/schemas/HostPathPage"}}}},
+          "default":{"description":"Stable code and redacted message","content":{"application/json":{"schema":{"$ref":"#/components/schemas/ErrorResponse"}}}}
+        }
+      }
+    },
     "/docker/creation-defaults": {
       "get": {
         "responses": {
@@ -3042,6 +3058,25 @@
               "$ref": "#/components/schemas/NetworkInfo"
             }
           }
+        }
+      },
+      "HostPathEntry": {
+        "type":"object",
+        "required":["name","path","kind"],
+        "properties":{
+          "name":{"type":"string"},
+          "path":{"type":"string"},
+          "kind":{"type":"string","enum":["DIRECTORY","FILE"]}
+        }
+      },
+      "HostPathPage": {
+        "type":"object",
+        "required":["path","parentPath","entries","nextCursor"],
+        "properties":{
+          "path":{"type":"string"},
+          "parentPath":{"type":["string","null"]},
+          "entries":{"type":"array","items":{"$ref":"#/components/schemas/HostPathEntry"}},
+          "nextCursor":{"type":["string","null"]}
         }
       },
       "DeviceInfo": {

@@ -85,6 +85,18 @@ async function execution(
   const bindings = new Map([
     ['Query.deckBridge', [new api.DeckBridgeRootResolver(), 'query', () => []]],
     [
+      'DeckBridgeQueries.docker',
+      [new api.DeckBridgeQueriesResolver(service), 'docker', () => []],
+    ],
+    [
+      'DeckBridgeDockerQueries.hostPaths',
+      [
+        new api.DeckBridgeDockerQueriesResolver(service),
+        'hostPaths',
+        (args, ctx) => [args.path, args.kind, args.first, args.after, ctx],
+      ],
+    ],
+    [
       'DeckBridgeQueries.info',
       [
         new api.DeckBridgeQueriesResolver(service),
@@ -248,7 +260,17 @@ async function execution(
           ],
         }),
       );
-    else if (
+    else if (req.url.startsWith('/docker/host-paths?')) {
+      const { searchParams } = new URL(req.url, 'http://localhost');
+      res.end(
+        JSON.stringify({
+          path: searchParams.get('path') ?? '/mnt/user/appdata',
+          parentPath: '/mnt/user',
+          entries: [],
+          nextCursor: null,
+        }),
+      );
+    } else if (
       req.url === '/system/preview' ||
       req.url === '/system/submit/reboot' ||
       req.url === '/docker/submit/restart'
@@ -329,6 +351,36 @@ const mutationCases = [
 ];
 const mutation = (domain, field) =>
   `mutation { deckBridge { ${domain} { ${field} { id } } } }`;
+
+test('host path queries enforce Docker create permission before Core I/O', async (t) => {
+  const { run, requests } = await execution(t);
+  const query =
+    'query($path: String) { deckBridge { docker { hostPaths(path: $path) { path entries { kind } } } } }';
+  const path = '/mnt/共享 +&';
+  const anonymous = await run(query, undefined, { path });
+  assert.equal(anonymous.errors?.[0]?.extensions.code, 'UNAUTHENTICATED');
+  for (const subject of [user('DOCKER'), user('SHARE'), user('OS')]) {
+    const denied = await run(query, subject, { path });
+    assert.match(denied.errors?.[0]?.message ?? '', /forbidden/i);
+  }
+  assert.deepEqual(requests, []);
+  const allowed = await run(
+    query,
+    { id: 'docker-creator', resource: 'DOCKER', action: 'CREATE_ANY' },
+    { path },
+  );
+  assert.equal(allowed.errors, undefined);
+  assert.equal(allowed.data.deckBridge.docker.hostPaths.path, path);
+  assert.deepEqual(requests, [
+    {
+      method: 'GET',
+      url:
+        '/docker/host-paths?' +
+        new URLSearchParams({ kind: 'DIRECTORIES', first: '100', path }),
+      actor: 'docker-creator',
+    },
+  ]);
+});
 
 test(
   'newer stable hosts preserve mutation authorization before Unix Core IO',
