@@ -1,3 +1,7 @@
+###2026.11.16
+- Add: Check for Unraid plugin updates, update plugins individually or in batches, and view progress, results, and logs for each plugin.
+- Add: Browse the Unraid host in read-only mode and select files or directories to mount when creating Docker containers.
+
 ###2026.11.07
 - Fix: Allow newer Unraid OS and API prerelease versions, including RC and Beta, during compatibility checks.
 
